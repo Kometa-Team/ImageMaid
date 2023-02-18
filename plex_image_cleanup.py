@@ -1,4 +1,4 @@
-import glob, os, shutil, sqlite3, sys, time
+import glob, os, re, shutil, sqlite3, sys, time, zipfile
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import closing
 from datetime import datetime
@@ -8,10 +8,11 @@ try:
     import plexapi, requests
     from num2words import num2words
     from pmmutils import args, logging, schedule, util
-    from plexapi.exceptions import Unauthorized
+    from plexapi.exceptions import PlexApiException, Unauthorized
     from plexapi.server import PlexServer
     from pmmutils.args import PMMArgs
     from pmmutils.exceptions import Continue, Failed
+    from requests.status_codes import _codes as codes
     from retrying import retry
     from tqdm import tqdm
 except (ModuleNotFoundError, ImportError):
@@ -305,7 +306,43 @@ def run_plex_image_cleanup(attrs):
                     logger.info("Downloading Database via the API. Plex will This will take some time... To see progress, log into Plex and\n"
                                 "go to Settings | Manage | Console and filter on Database. You can also look at the Plex Dashboard\n"
                                 "to see the progress of the Database backup.", start="database")
-                    plexapi.utils.download(server.url('/diagnostics/databases'), server._token, savepath=temp_dir, session=server._session, unpack=True, showstatus=True)
+
+                    # fetch the data to be saved
+                    headers = {'X-Plex-Token': server._token}
+                    response = server._session.get(server.url('/diagnostics/databases'), headers=headers, stream=True)
+                    if response.status_code not in (200, 201, 204):
+                        codename = codes.get(response.status_code)[0]
+                        errtext = response.text.replace('\n', ' ')
+                        message = f'({response.status_code}) {codename}; {response.url} {errtext}'
+                        raise Failed(f"Database Download Failed: {message}")
+                    os.makedirs(temp_dir, exist_ok=True)
+
+                    filename = None
+                    if response.headers.get('Content-Disposition'):
+                        filename = re.findall(r'filename=\"(.+)\"', response.headers.get('Content-Disposition'))
+                        filename = filename[0] if filename[0] else None
+                    if not filename:
+                        raise Failed("DB Filename not found")
+                    filename = os.path.basename(filename)
+                    fullpath = os.path.join(temp_dir, filename)
+                    # append file.ext from content-type if not already there
+                    extension = os.path.splitext(fullpath)[-1]
+                    if not extension:
+                        contenttype = response.headers.get('content-type')
+                        if contenttype and 'image' in contenttype:
+                            fullpath += contenttype.split('/')[1]
+
+                    with tqdm(unit='B', unit_scale=True, total=int(response.headers.get('content-length', 0)), desc=f"| {filename}") as bar:
+                        with open(fullpath, 'wb') as handle:
+                            for chunk in response.iter_content(chunk_size=4024):
+                                handle.write(chunk)
+                                bar.update(len(chunk))
+
+                    # check we want to unzip the contents
+                    if fullpath.endswith('zip'):
+                        with zipfile.ZipFile(fullpath, 'r') as handle:
+                            handle.extractall(temp_dir)
+
                     if backup_file := next((o for o in os.listdir(temp_dir) if str(o).startswith("databaseBackup")), None):
                         shutil.move(os.path.join(temp_dir, backup_file), dbpath)
                 if os.path.exists(temp_dir):
