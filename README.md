@@ -149,7 +149,7 @@ Each option can be applied in three ways:
 | Optimize DB     | Run Plex's Optimize DB Operation.<br>**Shell Command:** `-od` or `--optimize-db`<br>**Environment Variable:** `OPTIMIZE_DB=True`                                                                                                                                                                                                                                                                                                                                                                                                                                                 | &#10060; |
 | Trace Logs      | Run with every request and file action logged.<br>**Shell Command:** `-tr` or `--trace`<br>**Environment Variable:** `TRACE=True`                                                                                                                                                                                                                                                                                                                                                                                                                                                | &#10060; |
 
-#### Schedule Options
+### Schedule Options
 
 Schedule Blocks define how and when the script will run.
 
@@ -157,21 +157,34 @@ Each Schedule Blocks has 2 required parts (`time` and `frequency`) and 1 optiona
 
 You can have multiple Schedule Blocks separated with a `,` (`time|frequency,time|frequency|options`).
 
-##### Parts
+#### Schedule Block Parts
 
-* `time`: Time in the day the run will occur in the `HH:MM` 24 hour format (`00:00`-`23:59`). 
-* `frequency`: Frequency to schedule the run. `daily`, `weekly(Day of Week)`, or `monthly(Day of Month)` (`weekly(sunday)` or `monthly(1)`)
-* `options`: Options changed for the run in the format `option=value`, with multiple options separated with a `;`. Options: `mode`, `transcode`, `empty-trash`, `clean-bundles`, or `optimize-db`
+* `time`: Time in the day the run will occur.
+  * Time: `HH:MM` 24-hour format
+  * Examples: `00:00`-`23:59` 
+* `frequency`: Frequency to schedule the run. 
+  * Frequencies: `daily`, `weekly(Day of Week)`, or `monthly(Day of Month)`
+  * Examples: `weekly(sunday)` or `monthly(1)`
+* `options`: Options changed for the run in the format `option=value`, with multiple options separated with a `;`. 
+  * Options: `mode`, `transcode`, `empty-trash`, `clean-bundles`, or `optimize-db`
+  * Examples: `mode=nothing` or `transcode=true`
+  * **NOTE: This just overrides what you have set by the run command/environment variable**
 
-##### Example
+### Schedule Block Example
 
 ```
-SCHEDULE=08:00|weekly(sunday)|mode=clear;transcode=true,09:00|weekly(sunday)|mode=move
+SCHEDULE=08:00|weekly(sunday)|mode=clear,09:00|weekly(sunday)|mode=move,10:00|monthly(1)|mode=nothing;transcode=true
 ```
 
-Run mode: clear with Transcode on Sundays at 8am `08:00|weekly(sunday)|mode=remove;transcode=true`
-Run mode: move on Sundays at 9am `09:00|weekly(sunday)|mode=move`
-
+* Run at 8:00 AM on Sundays with the Options: `mode: clear`
+  * `08:00|weekly(sunday)|mode=remove`
+  * `time |frequency     |options`
+* Run at 9:00 AM on Sundays with the Options: `mode: move`
+  * `09:00|weekly(sunday)|mode=move`
+  * `time |frequency     |options`
+* Run at 10:00 AM on the 1st of each month with the Options: `mode: nothing` and `transcode: true` 
+  * `10:00|monthly(1)|mode=nothing;transcode=true`
+  * `time |frequency |options`
 
 ### Example .env File
 ```
