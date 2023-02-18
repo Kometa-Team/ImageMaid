@@ -448,7 +448,7 @@ def run_plex_image_cleanup(attrs):
 if __name__ == "__main__":
     try:
         if pmmargs["schedule"]:
-            pmmargs["schedule"] = pmmargs["schedule"].lower()
+            pmmargs["schedule"] = pmmargs["schedule"].lower().replace(" ", "")
             valid_sc = []
             schedules = pmmargs["schedule"].split(",")
             print()
@@ -490,7 +490,6 @@ if __name__ == "__main__":
                                     raise Failed(f'"{k.capitalize()} Error: {v} must be either "True" or "False""')
                             options[k] = final
 
-                    frequency.lower()
                     if frequency == "daily":
                         run_str += "Daily"
                         schedule.every().day.at(time_to_run).do(pic_thread, options)
