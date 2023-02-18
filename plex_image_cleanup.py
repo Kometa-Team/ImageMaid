@@ -5,8 +5,9 @@ from datetime import datetime
 from urllib.parse import quote
 
 try:
-    import plexapi, requests, schedule
-    from pmmutils import logging, util, args
+    import plexapi, requests
+    from num2words import num2words
+    from pmmutils import args, logging, schedule, util
     from plexapi.exceptions import Unauthorized
     from plexapi.server import PlexServer
     from pmmutils.args import PMMArgs
@@ -416,7 +417,10 @@ if __name__ == "__main__":
             pmmargs["schedule"] = pmmargs["schedule"].lower()
             valid_sc = []
             schedules = pmmargs["schedule"].split(",")
+            print()
+            print("Scheduled Runs: ")
             for sc in schedules:
+                run_str = ""
                 parts = sc.split("|")
                 if 1 < len(parts) < 4:
                     opts = None
@@ -454,9 +458,11 @@ if __name__ == "__main__":
 
                     frequency.lower()
                     if frequency == "daily":
+                        run_str += "Daily"
                         schedule.every().day.at(time_to_run).do(pic_thread, options)
                     elif frequency.startswith("weekly(") and frequency.endswith(")"):
                         weekday = frequency[7:-1]
+                        run_str += f"Weekly on {weekday.capitalize()}s"
                         match weekday:
                             case "sunday":
                                 schedule.every().sunday.at(time_to_run).do(pic_thread, options)
@@ -477,14 +483,22 @@ if __name__ == "__main__":
                     elif frequency.startswith("monthly(") and frequency.endswith(")"):
                         try:
                             day = int(frequency[8:-1])
+                            run_str += f"Monthly on the {num2words(day, to='ordinal_num')}"
                             if 0 < day < 32:
-                                schedule.every().monthThe(day).at(time_to_run).do(pic_thread, options)
+                                schedule.every().month_on(day).at(time_to_run).do(pic_thread, options)
                             else:
                                 raise ValueError
                         except ValueError:
                             raise Failed(f"Schedule Error: Invalid Monthly Frequency: {frequency}\nValue must be between 1-31")
+
+                    run_str += f" at {time_to_run}"
+                    if options:
+                        run_str += f" (Options: {'; '.join([f'{k}={v}' for k, v in options.items()])})"
+                    print(run_str)
                 else:
                     raise Failed(f'Schedule Error: Invalid Schedule: {sc}\nEach Schedule must be in either the "time|frequency" or "time|frequency|options" format')
+
+            print()
             while True:
                 schedule.run_pending()
                 next_run = schedule.next_run()
@@ -504,7 +518,7 @@ if __name__ == "__main__":
 
                 current_time = time_now.strftime("%A %B %d %H:%M")
                 next_run_str = next_run.strftime("%A %B %d %H:%M")
-                logger.ghost(f"Current Time: {current_time} | {remaining_str} until the next run on {next_run_str} | Runs: {', '.join(schedules)}")
+                logger.ghost(f"Current Time: {current_time} | {remaining_str} until the next run on {next_run_str}")
                 time.sleep(60)
         else:
             pic_thread({})
