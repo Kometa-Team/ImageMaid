@@ -8,7 +8,7 @@ try:
     import plexapi, requests
     from num2words import num2words
     from pmmutils import args, logging, schedule, util
-    from plexapi.exceptions import PlexApiException, Unauthorized
+    from plexapi.exceptions import Unauthorized
     from plexapi.server import PlexServer
     from pmmutils.args import PMMArgs
     from pmmutils.exceptions import Continue, Failed
@@ -311,10 +311,8 @@ def run_plex_image_cleanup(attrs):
                     headers = {'X-Plex-Token': server._token}
                     response = server._session.get(server.url('/diagnostics/databases'), headers=headers, stream=True)
                     if response.status_code not in (200, 201, 204):
-                        codename = codes.get(response.status_code)[0]
-                        errtext = response.text.replace('\n', ' ')
-                        message = f'({response.status_code}) {codename}; {response.url} {errtext}'
-                        raise Failed(f"Database Download Failed: {message}")
+                        message = f"({response.status_code}) {codes.get(response.status_code)[0]}; {response.url} "
+                        raise Failed(f"Database Download Failed: {message} " + response.text.replace('\n', ' '))
                     os.makedirs(temp_dir, exist_ok=True)
 
                     filename = None
@@ -325,7 +323,6 @@ def run_plex_image_cleanup(attrs):
                         raise Failed("DB Filename not found")
                     filename = os.path.basename(filename)
                     fullpath = os.path.join(temp_dir, filename)
-                    # append file.ext from content-type if not already there
                     extension = os.path.splitext(fullpath)[-1]
                     if not extension:
                         contenttype = response.headers.get('content-type')
