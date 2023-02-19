@@ -145,7 +145,7 @@ TRACE=False
 
 ### Base Options
 
-##### Plex Path
+#### Plex Path
 
 The only required Option is the `Plex Path` Option which is the Plex Config Folder containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
 
@@ -154,7 +154,7 @@ To set the `Plex Path` for the run:
 * **Shell Command:** `-p "C:\Plex Media Server"` or `--plex "C:\Plex Media Server"`
 * Will also check `/plex` relative to the base directory of the script if neither of the above are specified.
 
-##### Mode
+#### Mode
 
 How Plex Image Cleanup runs depends on the `Mode` Option that's currently set for that run.
 
@@ -177,11 +177,12 @@ The script needs to query the server's plex database to make sure it doesn't rem
 
 By default, the script will expect to connect to your Plex Server to download the Database using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 
-* **Environment Variable:** `PLEX_URL=http://192.168.1.12:32400`
-* **Shell Command:** `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
-
-* **Environment Variable:** `PLEX_TOKEN=123456789`
-* **Shell Command:** `-t "123456789"` or `--token "123456789"`
+* **Environment Variables:** 
+  * `PLEX_URL=http://192.168.1.12:32400`
+  * `PLEX_TOKEN=123456789`
+* **Shell Commands:** 
+  * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
+  * `-t "123456789"` or `--token "123456789"`
 
 #### Copy From Local
 
@@ -207,42 +208,42 @@ A previously downloaded or copied database can be used if it's less than 2 hours
 * **Shell Command:** `-e` or `--existing`
 
 
-Plex Image Cleanup can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the [Schedule Option](#schedule-options).
+Plex Image Cleanup can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the [Schedule Option](#continuous-schedule).
 
 ### Other Operations
 
 In addition to cleaning the Plex Metadata Directory for custom images the script can clean out your PhotoTranscoder Directory, Empty Trash, Clean Bundles, and Optimize DB.
 
-##### Photo Transcoder
+#### Photo Transcoder
 
 * **Environment Variable:** `PHOTO_TRANSCODER=True`
 * **Shell Command:** `-pt` or `--photo-transcoder`
 
-##### Empty Trash
+#### Empty Trash
 
 * **Environment Variable:** `EMPTY_TRASH=True`
 * **Shell Command:** `-et` or `--empty-trash`
 
-##### Clean Bundles
+#### Clean Bundles
 
 * **Environment Variable:** `CLEAN_BUNDLES=True`
 * **Shell Command:** `-cb` or `--clean-bundles`
 
-##### Optimize DB
+#### Optimize DB
 
 * **Environment Variable:** `OPTIMIZE_DB=True`
 * **Shell Command:** `-od` or `--optimize-db`
 
 ### Other Options
 
-##### Discord URL
+#### Discord URL
 
 Discord Webhook URL to send notifications to.
 
 * **Environment Variable:** `DISCORD=https://discord.com/api/webhooks/###/###`
 * **Shell Command:** `-d "https://discord.com/api/webhooks/###/###"` or `--discord "https://discord.com/api/webhooks/###/###"`
 
-##### Timeout
+#### Timeout
 
 Connection Timeout in seconds that's greater than 0.
 
@@ -250,7 +251,7 @@ Connection Timeout in seconds that's greater than 0.
 * **Environment Variable:** `TIMEOUT=1000`
 * **Shell Command:** `-ti 1000` or `--timeout 1000`
 
-##### Sleep
+#### Sleep
 
 Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that's greater than 0 .
 
@@ -258,19 +259,19 @@ Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that'
 * **Environment Variable:** `SLEEP=100`
 * **Shell Command:** `-s 100` or `--sleep 100`
 
-##### Trace
+#### Trace
 
 Run with every request and file action logged.
 
-** **Environment Variable:** `TRACE=True`
-**Shell Command:** `-tr` or `--trace`
+* **Environment Variable:** `TRACE=True`
+* **Shell Command:** `-tr` or `--trace`
 
 ### Continuous Schedule
 
 Add a Schedule Block to the `Schedule` Option to run Plex Image Cleanup using a continuous schedule.
 
-**Shell Command:** `-sc` or `--schedule "05:00|weekly(sunday)"`
-**Environment Variable:** `SCHEDULE="05:00|weekly(sunday)"`
+* **Shell Command:** `-sc` or `--schedule "05:00|weekly(sunday)"`
+* **Environment Variable:** `SCHEDULE="05:00|weekly(sunday)"`
 
 ### Schedule Blocks
 
