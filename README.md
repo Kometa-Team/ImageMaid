@@ -17,7 +17,7 @@ As well as being able to clean the PhotoTranscoder Directory and running the Ple
 
 Special Thanks to [bullmoose20](https://github.com/bullmoose20) for the original [Plex Bloat Fix](https://github.com/bullmoose20/Plex-Stuff#plex-bloat-fix) (PBF) Script this is based on.
 
-![](dispaly.png)
+![](cleanup.png)
 
 This image shows which photos would be removed. Red is removed, Green is kept because it is the actively selected poster. The other two come standard from Plex when the posters are retrieved so the script will not touch those either:
 
@@ -110,6 +110,23 @@ A `Dockerfile` is included within the GitHub repository for those who require it
 
 ## Usage
 
+When running Plex Image Cleanup, make sure that you are not running any tools which may touch posters, backgrounds or title card images - namely [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) or [TitleCardMaker](https://github.com/CollinHeist/TitleCardMaker).
+
+It is recommended to schedule Plex Image Cleanup after the above tools or Plex's Scheduled Tasks.
+
+An example schedule would be:
+00:00-02:00 - TitleCardMaker
+02:00-05:00 - Plex Scheduled Tasks
+05:00-07:00 - Plex Meta Manager
+07:00-09:00 - Plex Image Cleanup
+
+### Tips
+
+* Ensure you have proper permissions to delete/rename or the script will fail
+* For performance purposes, it's recommended to run locally so that accessing the files is not done over a network share
+
+## Global Options
+
 Plex Image Cleanup has multiple Global Options to change how it runs these are set in 3 different ways listed in priority order:
 
 1. Setting the Environment Variable.
@@ -136,12 +153,6 @@ CLEAN_BUNDLES=False
 OPTIMIZE_DB=False
 TRACE=False
 ```
-
-### Notes / Tips
-
-* Make sure that you are NOT actively updating posters or title cards with PMM or TCM while running this script. Schedule this after the last run happens. So TCM, Plex Scheduled Tasks, PMM, THEN schedule or run Plex Image Cleanup. Example: TCM @ 00:00, PLEX @ 02:00-05:00, and PMM @ 05:00
-* Ensure you have proper permissions to delete/rename or the script will fail
-* For performance purposes, it's recommended to run locally so that accessing the files is not done over a network share
 
 ### Base Options
 
