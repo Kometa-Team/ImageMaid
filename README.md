@@ -115,10 +115,10 @@ When running Plex Image Cleanup, make sure that you are not running any tools wh
 It is recommended to schedule Plex Image Cleanup after the above tools or Plex's Scheduled Tasks.
 
 An example schedule would be:
-00:00-02:00 - TitleCardMaker
-02:00-05:00 - Plex Scheduled Tasks
-05:00-07:00 - Plex Meta Manager
-07:00-09:00 - Plex Image Cleanup
+* 00:00-02:00 - TitleCardMaker
+* 02:00-05:00 - Plex Scheduled Tasks
+* 05:00-07:00 - Plex Meta Manager
+* 07:00-09:00 - Plex Image Cleanup
 
 ### Tips
 
@@ -206,7 +206,7 @@ Alternatively the database can be copied from your local config folder you suppl
 
 Restarting allows for all temp SQLite files to be written to the primary Plex DB ensuring that all currently selected posters are properly known and preserved.
 
-The script will not run when the temp SQLite files are found to ignore this Error this use the `Ignore Running` Option.
+The script will not run when the temp SQLite files are found. To ignore this error, use the `Ignore Running` Option.
 
 * **Environment Variable:** `IGNORE_RUNNING=True` 
 * **Shell Command:** `-i` or `--ignore`
@@ -217,9 +217,6 @@ A previously downloaded or copied database can be used if it's less than 2 hours
 
 * **Environment Variable:** `USE_EXISTING=True`
 * **Shell Command:** `-e` or `--existing`
-
-
-Plex Image Cleanup can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the [Schedule Option](#continuous-schedule).
 
 ### Other Operations
 
@@ -279,6 +276,8 @@ Run with every request and file action logged.
 
 ### Continuous Schedule
 
+Plex Image Cleanup can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the `Schedule` Option.
+
 Add a Schedule Block to the `Schedule` Option to run Plex Image Cleanup using a continuous schedule.
 
 * **Shell Command:** `-sc` or `--schedule "05:00|weekly(sunday)"`
@@ -310,6 +309,8 @@ You can have multiple Schedule Blocks separated with a `,` (`time|frequency,time
 ```
 SCHEDULE=08:00|weekly(sunday)|mode=clear,09:00|weekly(sunday)|mode=move,10:00|monthly(1)|mode=nothing;photo-transcoder=true
 ```
+
+The example above is detailed out below to better explain how it works:
 
 * Run at 8:00 AM on Sundays with the Options: `mode: clear`
   * `08:00|weekly(sunday)|mode=remove`

@@ -89,19 +89,37 @@ def pic_thread(attrs):
 
 def run_plex_image_cleanup(attrs):
     logger.header(pmmargs, sub=True, discord_update=True)
-    logger.separator()
+    logger.separator("Validating Options", space=False, border=False)
     do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else pmmargs["photo-transcoder"]
     do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
     do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
     do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
+    mode = attrs["mode"].lower() if "mode" in attrs else pmmargs["mode"].lower()
+    description = f"Running in {mode.capitalize()} Mode"
+    extras = []
+    if do_trash:
+        extras.append("Empty Trash")
+    if do_bundles:
+        extras.append("Clean Bundles")
+    if do_optimize:
+        extras.append("Optimize DB")
+    if do_transcode:
+        extras.append("PhotoTrancoder")
+    if extras:
+        description += f" with {', '.join(extras[:-1])}{', and ' if len(extras) > 1 else ''}{extras[-1]} set to True"
+    logger.info(description)
     report = []
     messages = []
     try:
-        logger.info("Validating Options")
         try:
             logger.info("Script Started", log=False, discord=True)
         except Failed as e:
             logger.error(e)
+
+        # Check Mode
+        if mode not in modes:
+            raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
+        logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
 
         # Check Plex Path
         if not pmmargs["plex"]:
@@ -122,10 +140,6 @@ def run_plex_image_cleanup(attrs):
                          f'              Should contain "Cache", "Metadata", and "Plug-in Support"\n'
                          f'              Contents:\n                  {contents}')
 
-        # Check Mode
-        mode = attrs["mode"].lower() if "mode" in attrs else pmmargs["mode"].lower()
-        if mode not in modes:
-            raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
 
         # Delete PhotoTranscoder
         if do_transcode:
@@ -181,12 +195,11 @@ def run_plex_image_cleanup(attrs):
                 except Exception as e1:
                     logger.error(e1)
                     raise
-
-            return plex_connect()
+            plex_server = plex_connect()
+            logger.info("Successfully Connected to Plex")
+            return plex_server
 
         if mode != "nothing":
-            logger.info(f"Running in {mode} mode. {modes[mode]['desc']}")
-
             if os.path.exists(restore_dir):
                 match mode:
                     case "restore":
@@ -233,12 +246,8 @@ def run_plex_image_cleanup(attrs):
                         logger.info(f"Space Recovered: {space}")
                         logger.info(f"Runtime: {logger.runtime()}")
                         report.append([("Removing PIC Restore Bloat Images", "")])
-                        report.append([
-                            ("Space Recovered", space),
-                            ("Files Removed", len(del_paths)),
-                            ("Scan Time", f"{logger.runtime('scanning')}"),
-                            ("Restore Time", f"{logger.runtime('work')}")
-                        ])
+                        report.append([("Space Recovered", space),("Files Removed", len(del_paths))])
+                        report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
                     case _:
                         logger.error(f"{mode} mode invalid while the PIC Restore Folder exists.", discord=True, rows=[
                             [("PIC Path", restore_dir)],
@@ -289,11 +298,12 @@ def run_plex_image_cleanup(attrs):
                 else:
                     logger.warning(f"Existing Database not found {'making' if pmmargs['local'] else 'downloading'} a new copy")
 
+            report.append([("Database", "")])
             fields = []
             if is_usable:
-                report.append([("Plex Database", "Using Existing Database")])
+                report.append([("", "Using Existing Database")])
             else:
-                report.append([("Plex Database", f"{'Copied' if pmmargs['local'] else 'Downloaded'} New Database")])
+                report.append([("", f"{'Copied' if pmmargs['local'] else 'Downloaded'} New Database")])
                 if os.path.exists(dbpath):
                     os.remove(dbpath)
                 if os.path.exists(temp_dir):
@@ -303,9 +313,10 @@ def run_plex_image_cleanup(attrs):
                     logger.info(f"Copying database from {os.path.join(databases_dir, plex_db_name)}", start="database")
                     util.copy_with_progress(os.path.join(databases_dir, plex_db_name), dbpath, description=f"Copying database file to: {dbpath}")
                 else:
-                    logger.info("Downloading Database via the API. Plex will This will take some time... To see progress, log into Plex and\n"
-                                "go to Settings | Manage | Console and filter on Database. You can also look at the Plex Dashboard\n"
-                                "to see the progress of the Database backup.", start="database")
+                    logger.info("Downloading Database via the API. Plex will This will take some time... To see progress, log into\n"
+                                "Plex and go to Settings | Manage | Console and filter on Database.\n"
+                                "You can also look at the Plex Dashboard to see the progress of the Database backup.", start="database")
+                    logger.info()
 
                     # fetch the data to be saved
                     headers = {'X-Plex-Token': server._token}
@@ -398,17 +409,13 @@ def run_plex_image_cleanup(attrs):
                         logger.debug(message)
                     else:
                         logger.trace(message)
-                logger.info(f"Removing Complete: Removed {len(bloat_paths)} Bloat Images")
+                logger.info(f"{modes[mode]['ing']} Complete: {modes[mode]['ed']} {len(bloat_paths)} Bloat Images")
                 space = util.format_bytes(logger["size"])
-                logger.info(f"Space Recovered: {space}")
+                logger.info(f"{modes[mode]['space']}: {space}")
                 logger.info(f"Runtime: {logger.runtime()}")
-                report.append([("Removing Bloat Images", "")])
-                report.append([
-                    (modes[mode]["space"], space),
-                    (f"Files {modes[mode]['ed']}", len(bloat_paths)),
-                    ("Scan Time", f"{logger.runtime('scanning')}"),
-                    (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")
-                ])
+                report.append([(f"{modes[mode]['ing']} Bloat Images", "")])
+                report.append([(modes[mode]["space"], space), (f"Files {modes[mode]['ed']}", len(bloat_paths))])
+                report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
         elif do_trash or do_bundles or do_optimize:
             server = get_server()
 
@@ -439,11 +446,11 @@ def run_plex_image_cleanup(attrs):
             logger.debug(message)
         logger.stacktrace()
         logger.critical(e, discord=True)
-
     logger.error_report()
-    logger.separator()
-    logger.info(f"{script_name} Finished\nRun Time: {logger.runtime()}", discord=True)
-    logger.separator()
+    logger.switch()
+    report.append([(f"{script_name} Finished", "")])
+    report.append([("Total Runtime", f"{logger.runtime()}")])
+    logger.report(f"{script_name} Summary", description=description, rows=report, discord=True)
 
 if __name__ == "__main__":
     try:
