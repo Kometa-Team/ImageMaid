@@ -29,7 +29,7 @@ def not_failed(exception):
 modes = {
     "nothing": {
         "ed": "", "ing": "", "space": "",
-        "desc": "Does not process any files in the Metadata Directory."
+        "desc": "Metadata Directory Files will not even be looked at."
     },
     "clear": {
         "ed": "Cleared", "ing": "Clearing", "space": "Space Recovered",
@@ -37,31 +37,31 @@ modes = {
     },
     "report": {
         "ed": "Reported", "ing": "Reporting", "space": "Potential Recovery",
-        "desc": "File changes will be reported but not done."
+        "desc": "Metadata Directory File changes will be reported but not performed."
     },
     "move": {
         "ed": "Moved", "ing": "Moving", "space": "Potential Recovery",
-        "desc": "Files will be moved from the Metadata Directory. (CAN BE RESTORED)"
+        "desc": "Metadata Directory Files will be moved to the PIC Restore Directory. (CAN BE RESTORED)"
     },
     "restore": {
         "ed": "Restored", "ing": "Restoring", "space": "",
-        "desc": "Restores Renamed Bloat Images."
+        "desc": "Restores the Metadata Directory Files from the PIC Restore Directory."
     },
     "remove": {
         "ed": "Removed", "ing": "Removing", "space": "Space Recovered",
-        "desc": "Files will be removed from the Metadata Directory. (CANNOT BE RESTORED)"
+        "desc": "Metadata Directory Files will be removed. (CANNOT BE RESTORED)"
     }
 }
 mode_descriptions = '\n\t'.join([f"{m}: {d}" for m, d in modes.items()])
 sc_options = ["mode", "photo-transcoder", "empty-trash", "clean-bundles", "optimize-db"]
 options = [
-    {"arg": "p",  "key": "plex",             "env": "PLEX_PATH",        "type": "str",  "default": None,     "help": "Path to the Plex Install Folder (Contains Folders: Cache, Metadata, Plug-in Support)."},
+    {"arg": "p",  "key": "plex",             "env": "PLEX_PATH",        "type": "str",  "default": None,     "help": "Path to the Plex Config Folder (Contains Folders: Cache, Metadata, Plug-in Support)."},
     {"arg": "m",  "key": "mode",             "env": "MODE",             "type": "str",  "default": "report", "help": f"Global Mode to Run the Script in ({', '.join(modes)}). (Default: report)"},
     {"arg": "sc", "key": "schedule",         "env": "SCHEDULE",         "type": "str",  "default": None,     "help": "Schedule to run in continuous mode."},
     {"arg": "u",  "key": "url",              "env": "PLEX_URL",         "type": "str",  "default": None,     "help": "Plex URL of the Server you want to connect to."},
     {"arg": "t",  "key": "token",            "env": "PLEX_TOKEN",       "type": "str",  "default": None,     "help": "Plex Token of the Server you want to connect to."},
     {"arg": "di", "key": "discord",          "env": "DISCORD",          "type": "str",  "default": None,     "help": "Webhook URL to channel for Notifications."},
-    {"arg": "ti", "key": "timeout",          "env": "TIMEOUT",          "type": "int",  "default": 600,      "help": "Timeout can be any number greater then 0. (Default: 600)"},
+    {"arg": "ti", "key": "timeout",          "env": "TIMEOUT",          "type": "int",  "default": 600,      "help": "Connection Timeout in Seconds that's greater than 0. (Default: 600)"},
     {"arg": "s",  "key": "sleep",            "env": "SLEEP",            "type": "int",  "default": 60,       "help": "Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB. (Default: 60)"},
     {"arg": "i",  "key": "ignore",           "env": "IGNORE_RUNNING",   "type": "bool", "default": False,    "help": "Ignore Warnings that Plex is currently Running."},
     {"arg": "l",  "key": "local",            "env": "LOCAL_DB",         "type": "bool", "default": False,    "help": "The script will copy the database file rather than downloading it through the Plex API (Helps with Large DBs)."},
@@ -312,7 +312,7 @@ def run_plex_image_cleanup(attrs):
                     response = server._session.get(server.url('/diagnostics/databases'), headers=headers, stream=True)
                     if response.status_code not in (200, 201, 204):
                         message = f"({response.status_code}) {codes.get(response.status_code)[0]}; {response.url} "
-                        raise Failed(f"Database Download Failed: {message} " + response.text.replace('\n', ' '))
+                        raise Failed(f"Database Download Failed Try Using Local Copy: {message} " + response.text.replace('\n', ' '))
                     os.makedirs(temp_dir, exist_ok=True)
 
                     filename = None
