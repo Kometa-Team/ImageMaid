@@ -53,23 +53,23 @@ modes = {
     }
 }
 mode_descriptions = '\n\t'.join([f"{m}: {d}" for m, d in modes.items()])
-sc_options = ["mode", "transcode", "empty-trash", "clean-bundles", "optimize-db"]
+sc_options = ["mode", "photo-transcoder", "empty-trash", "clean-bundles", "optimize-db"]
 options = [
     {"arg": "p",  "key": "plex",             "env": "PLEX_PATH",        "type": "str",  "default": None,     "help": "Path to the Plex Install Folder (Contains Folders: Cache, Metadata, Plug-in Support)."},
-    {"arg": "m",  "key": "mode",             "env": "MODE",             "type": "str",  "default": "report", "help": f"Run Mode ({', '.join(modes)}). (Default: report)"},
+    {"arg": "m",  "key": "mode",             "env": "MODE",             "type": "str",  "default": "report", "help": f"Global Mode to Run the Script in ({', '.join(modes)}). (Default: report)"},
     {"arg": "sc", "key": "schedule",         "env": "SCHEDULE",         "type": "str",  "default": None,     "help": "Schedule to run in continuous mode."},
     {"arg": "u",  "key": "url",              "env": "PLEX_URL",         "type": "str",  "default": None,     "help": "Plex URL of the Server you want to connect to."},
     {"arg": "t",  "key": "token",            "env": "PLEX_TOKEN",       "type": "str",  "default": None,     "help": "Plex Token of the Server you want to connect to."},
     {"arg": "di", "key": "discord",          "env": "DISCORD",          "type": "str",  "default": None,     "help": "Webhook URL to channel for Notifications."},
     {"arg": "ti", "key": "timeout",          "env": "TIMEOUT",          "type": "int",  "default": 600,      "help": "Timeout can be any number greater then 0. (Default: 600)"},
     {"arg": "s",  "key": "sleep",            "env": "SLEEP",            "type": "int",  "default": 60,       "help": "Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB. (Default: 60)"},
-    {"arg": "i",  "key": "ignore",           "env": "IGNORE_RUNNING",   "type": "bool", "default": False,    "help": "Ignore Warnings the Plex is currently Running."},
-    {"arg": "l",  "key": "local",            "env": "LOCAL_DB",         "type": "bool", "default": False,    "help": "Copy Local DB instead of Downloading from the API (Helps with Large DBs)."},
+    {"arg": "i",  "key": "ignore",           "env": "IGNORE_RUNNING",   "type": "bool", "default": False,    "help": "Ignore Warnings that Plex is currently Running."},
+    {"arg": "l",  "key": "local",            "env": "LOCAL_DB",         "type": "bool", "default": False,    "help": "The script will copy the database file rather than downloading it through the Plex API (Helps with Large DBs)."},
     {"arg": "e",  "key": "existing",         "env": "USE_EXISTING",     "type": "bool", "default": False,    "help": "Use the existing database if less then 2 hours old."},
-    {"arg": "ct", "key": "transcode",        "env": "CLEAN_TRANSCODE",  "type": "bool", "default": False,    "help": "Clean Plex's PhotoTranscoder Directory."},
-    {"arg": "et", "key": "empty-trash",      "env": "EMPTY_TRASH",      "type": "bool", "default": False,    "help": "Run Plex's Empty Trash Operation."},
-    {"arg": "cb", "key": "clean-bundles",    "env": "CLEAN_BUNDLES",    "type": "bool", "default": False,    "help": "Run Plex's Clean Bundles Operation."},
-    {"arg": "od", "key": "optimize-db",      "env": "OPTIMIZE_DB",      "type": "bool", "default": False,    "help": "Run Plex's Optimize DB Operation."},
+    {"arg": "pt", "key": "photo-transcoder", "env": "PHOTO_TRANSCODER", "type": "bool", "default": False,    "help": "Global Toggle to Clean Plex's PhotoTranscoder Directory."},
+    {"arg": "et", "key": "empty-trash",      "env": "EMPTY_TRASH",      "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Empty Trash Operation."},
+    {"arg": "cb", "key": "clean-bundles",    "env": "CLEAN_BUNDLES",    "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Clean Bundles Operation."},
+    {"arg": "od", "key": "optimize-db",      "env": "OPTIMIZE_DB",      "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Optimize DB Operation."},
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with every request logged."}
 ]
 script_name = "Plex Image Cleanup"
@@ -90,7 +90,7 @@ def pic_thread(attrs):
 def run_plex_image_cleanup(attrs):
     logger.header(pmmargs, sub=True, discord_update=True)
     logger.separator()
-    do_transcode = attrs["transcode"] if "transcode" in attrs else pmmargs["transcode"]
+    do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else pmmargs["photo-transcoder"]
     do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
     do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
     do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
@@ -123,7 +123,7 @@ def run_plex_image_cleanup(attrs):
                          f'              Contents:\n                  {contents}')
 
         # Check Mode
-        mode = attrs["transcode"].lower() if "transcode" in attrs else pmmargs["mode"].lower()
+        mode = attrs["mode"].lower() if "mode" in attrs else pmmargs["mode"].lower()
         if mode not in modes:
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
 
