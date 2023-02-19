@@ -78,8 +78,8 @@ metadata_folders = ["Movies", "TV Shows", "Playlists", "Collections", "Artists",
 base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
 pmmargs = PMMArgs("meisnate12/Plex-Image-Cleanup", os.path.dirname(os.path.abspath(__file__)), options, use_nightly=False)
-secrets = [pmmargs["url"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc]
 logger = logging.PMMLogger(script_name, "plex_image_cleanup", os.path.join(config_dir, "logs"), discord_url=pmmargs["discord"], log_requests=pmmargs["trace"])
+logger.secret([pmmargs["url"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc])
 requests.Session.send = util.update_send(requests.Session.send, pmmargs["timeout"])
 plexapi.BASE_HEADERS["X-Plex-Client-Identifier"] = pmmargs.uuid
 
@@ -94,7 +94,12 @@ def run_plex_image_cleanup(attrs):
     do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
     do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
     do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
-    mode = attrs["mode"].lower() if "mode" in attrs else pmmargs["mode"].lower()
+    if "mode" in attrs and attrs["mode"]:
+        mode = str(attrs["mode"]).lower()
+    elif pmmargs["mode"]:
+        mode = str(pmmargs["mode"]).lower()
+    else:
+        mode = "report"
     description = f"Running in {mode.capitalize()} Mode"
     extras = []
     if do_trash:
@@ -110,16 +115,17 @@ def run_plex_image_cleanup(attrs):
     logger.info(description)
     report = []
     messages = []
+    kbi = None
     try:
-        try:
-            logger.info("Script Started", log=False, discord=True)
-        except Failed as e:
-            logger.error(e)
-
         # Check Mode
         if mode not in modes:
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
         logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
+
+        try:
+            logger.info("Script Started", log=False, discord=True)
+        except Failed as e:
+            logger.error(f"Discord URL Error: {e}")
 
         # Check Plex Path
         if not pmmargs["plex"]:
@@ -313,8 +319,8 @@ def run_plex_image_cleanup(attrs):
                     logger.info(f"Copying database from {os.path.join(databases_dir, plex_db_name)}", start="database")
                     util.copy_with_progress(os.path.join(databases_dir, plex_db_name), dbpath, description=f"Copying database file to: {dbpath}")
                 else:
-                    logger.info("Downloading Database via the API. Plex will This will take some time... To see progress, log into\n"
-                                "Plex and go to Settings | Manage | Console and filter on Database.\n"
+                    logger.info("Downloading Database via the Plex API. First Plex will make a backup of your database.\n"
+                                "To see progress, log into Plex and go to Settings | Manage | Console and filter on Database.\n"
                                 "You can also look at the Plex Dashboard to see the progress of the Database backup.", start="database")
                     logger.info()
 
@@ -446,11 +452,17 @@ def run_plex_image_cleanup(attrs):
             logger.debug(message)
         logger.stacktrace()
         logger.critical(e, discord=True)
+    except KeyboardInterrupt:
+        logger.separator(f"User Exiting {script_name}")
+        logger.remove_main_handler()
+        raise
+
     logger.error_report()
     logger.switch()
     report.append([(f"{script_name} Finished", "")])
     report.append([("Total Runtime", f"{logger.runtime()}")])
     logger.report(f"{script_name} Summary", description=description, rows=report, discord=True)
+    logger.remove_main_handler()
 
 if __name__ == "__main__":
     try:
@@ -458,8 +470,8 @@ if __name__ == "__main__":
             pmmargs["schedule"] = pmmargs["schedule"].lower().replace(" ", "")
             valid_sc = []
             schedules = pmmargs["schedule"].split(",")
-            print()
-            print("Scheduled Runs: ")
+            logger.info()
+            logger.info("Scheduled Runs: ")
             for sc in schedules:
                 run_str = ""
                 parts = sc.split("|")
@@ -534,11 +546,11 @@ if __name__ == "__main__":
                     run_str += f" at {time_to_run}"
                     if options:
                         run_str += f" (Options: {'; '.join([f'{k}={v}' for k, v in options.items()])})"
-                    print(run_str)
+                    logger.info(run_str)
                 else:
                     raise Failed(f'Schedule Error: Invalid Schedule: {sc}\nEach Schedule must be in either the "time|frequency" or "time|frequency|options" format')
 
-            print()
+            logger.info()
             while True:
                 schedule.run_pending()
                 next_run = schedule.next_run()
