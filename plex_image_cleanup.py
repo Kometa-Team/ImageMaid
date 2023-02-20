@@ -79,7 +79,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
 pmmargs = PMMArgs("meisnate12/Plex-Image-Cleanup", os.path.dirname(os.path.abspath(__file__)), options, use_nightly=False)
 logger = logging.PMMLogger(script_name, "plex_image_cleanup", os.path.join(config_dir, "logs"), discord_url=pmmargs["discord"], log_requests=pmmargs["trace"])
-logger.secret([pmmargs["url"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc])
+logger.secret([pmmargs["url"], pmmargs["discord"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc])
 requests.Session.send = util.update_send(requests.Session.send, pmmargs["timeout"])
 plexapi.BASE_HEADERS["X-Plex-Client-Identifier"] = pmmargs.uuid
 
@@ -115,7 +115,6 @@ def run_plex_image_cleanup(attrs):
     logger.info(description)
     report = []
     messages = []
-    kbi = None
     try:
         # Check Mode
         if mode not in modes:
@@ -146,7 +145,6 @@ def run_plex_image_cleanup(attrs):
                          f'              Should contain "Cache", "Metadata", and "Plug-in Support"\n'
                          f'              Contents:\n                  {contents}')
 
-
         # Delete PhotoTranscoder
         if do_transcode:
             logger.separator(f"Remove PhotoTranscoder Images\nDir: {transcoder_dir}")
@@ -164,8 +162,7 @@ def run_plex_image_cleanup(attrs):
                 file = os.path.join(transcoder_dir, f)
                 messages.append(f"REMOVE: {file}")
                 logger["size"] += os.path.getsize(file)
-                if mode != "report":
-                    os.remove(file)
+                os.remove(file)
             for message in messages:
                 logger.trace(message)
 
@@ -174,12 +171,8 @@ def run_plex_image_cleanup(attrs):
             logger.info(f"Space Recovered: {space}")
             logger.info(f"Runtime: {logger.runtime()}")
             report.append([("Remove PhotoTranscoder Images", "")])
-            report.append([
-                ("Space Recovered", space),
-                ("Files Removed", len(transcode_images)),
-                ("Scan Time", f"{logger.runtime('transcode_scan')}"),
-                ("Remove Time", f"{logger.runtime('transcode')}")
-            ])
+            report.append([("Space Recovered", space), ("Files Removed", len(transcode_images))])
+            report.append([("Scan Time", f"{logger.runtime('transcode_scan')}"), ("Remove Time", f"{logger.runtime('transcode')}")])
 
         # Connection to Plex
         server = None
@@ -273,9 +266,7 @@ def run_plex_image_cleanup(attrs):
                 pmmargs["local"] = True
                 logger.warning("No Plex URL and Plex Token Given assuming Local Run")
             if pmmargs["local"]:
-                db_tmp01 = os.path.join(pmmargs["database"], f"{plex_db_name}-shm")
-                db_tmp02 = os.path.join(pmmargs["database"], f"{plex_db_name}-wal")
-                if os.path.exists(db_tmp01) or os.path.exists(db_tmp02):
+                if any([os.path.exists(os.path.join(databases_dir, f"{plex_db_name}-{t}")) for t in ["shm", "wal"]]):
                     temp_db_warning = "At least one of the SQLite temp files is next to the Plex DB; this indicates Plex is still running\n" \
                                       "and copying the DB carries a small risk of data loss as the temp files may not have updated the\n" \
                                       "main DB yet.\n" \
@@ -453,7 +444,7 @@ def run_plex_image_cleanup(attrs):
         logger.stacktrace()
         logger.critical(e, discord=True)
     except KeyboardInterrupt:
-        logger.separator(f"User Exiting {script_name}")
+        logger.separator(f"User Canceled Run {script_name}")
         logger.remove_main_handler()
         raise
 
@@ -470,6 +461,7 @@ if __name__ == "__main__":
             pmmargs["schedule"] = pmmargs["schedule"].lower().replace(" ", "")
             valid_sc = []
             schedules = pmmargs["schedule"].split(",")
+            logger.separator(f"{script_name} Continuous Scheduled")
             logger.info()
             logger.info("Scheduled Runs: ")
             for sc in schedules:
@@ -546,10 +538,12 @@ if __name__ == "__main__":
                     run_str += f" at {time_to_run}"
                     if options:
                         run_str += f" (Options: {'; '.join([f'{k}={v}' for k, v in options.items()])})"
-                    logger.info(run_str)
+                    logger.info(f"* {run_str}")
                 else:
                     raise Failed(f'Schedule Error: Invalid Schedule: {sc}\nEach Schedule must be in either the "time|frequency" or "time|frequency|options" format')
 
+            logger.info()
+            logger.separator()
             logger.info()
             while True:
                 schedule.run_pending()
