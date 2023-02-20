@@ -330,8 +330,7 @@ def run_plex_image_cleanup(attrs):
                     space = util.format_bytes(logger["size"])
                     logger.info(f"{modes[mode]['space']}: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    report.append([(f"{modes[mode]['ing']} Bloat Images", "")])
-                    report.append([(modes[mode]["space"], space), (f"Files {modes[mode]['ed']}", len(bloat_paths))])
+                    report.append([(f"{modes[mode]['ing']} Bloat Images", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):
@@ -380,8 +379,7 @@ def run_plex_image_cleanup(attrs):
                     space = util.format_bytes(logger["size"])
                     logger.info(f"Space Recovered: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    report.append([("Removing PIC Restore Bloat Images", "")])
-                    report.append([("Space Recovered", space),("Files Removed", len(del_paths))])
+                    report.append([("Removing PIC Restore Bloat Images", f"{space} of Space Recovered Removing {len(del_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
         except Failed as e:
             logger.error(f"Metadata Error: {e}")
@@ -411,8 +409,7 @@ def run_plex_image_cleanup(attrs):
             space = util.format_bytes(logger["size"])
             logger.info(f"Space Recovered: {space}")
             logger.info(f"Runtime: {logger.runtime()}")
-            report.append([("Remove PhotoTranscoder Images", "")])
-            report.append([("Space Recovered", space), ("Files Removed", len(transcode_images))])
+            report.append([("Remove PhotoTranscoder Images", f"{space} of Space Recovered Removing {len(transcode_images)} Files")])
             report.append([("Scan Time", f"{logger.runtime('transcode_scan')}"), ("Remove Time", f"{logger.runtime('transcode')}")])
 
         # Plex Operations
@@ -448,7 +445,7 @@ def run_plex_image_cleanup(attrs):
     logger.switch()
     report.append([(f"{script_name} Finished", "")])
     report.append([("Total Runtime", f"{logger.runtime()}")])
-    logger.report(f"{script_name} Summary", description=description, rows=report, discord=True)
+    logger.report(f"{script_name} Summary", description=description, rows=report, width=18, discord=True)
     logger.remove_main_handler()
 
 if __name__ == "__main__":
