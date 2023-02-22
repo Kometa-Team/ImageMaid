@@ -19,8 +19,8 @@ except (ModuleNotFoundError, ImportError):
     print("Requirements Error: Requirements are not installed")
     sys.exit(0)
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 10:
-    print("Version Error: Version: %s.%s.%s incompatible please use Python 3.10+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
+if sys.version_info[0] != 3 or sys.version_info[1] < 11:
+    print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
     sys.exit(0)
 
 def not_failed(exception):
@@ -74,10 +74,9 @@ options = [
 ]
 script_name = "Plex Image Cleanup"
 plex_db_name = "com.plexapp.plugins.library.db"
-metadata_folders = ["Movies", "TV Shows", "Playlists", "Collections", "Artists", "Albums"]
 base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
-pmmargs = PMMArgs("meisnate12/Plex-Image-Cleanup", os.path.dirname(os.path.abspath(__file__)), options, use_nightly=False)
+pmmargs = PMMArgs("meisnate12/Plex-Image-Cleanup", base_dir, options, use_nightly=False)
 logger = logging.PMMLogger(script_name, "plex_image_cleanup", os.path.join(config_dir, "logs"), discord_url=pmmargs["discord"], log_requests=pmmargs["trace"])
 logger.secret([pmmargs["url"], pmmargs["discord"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc])
 requests.Session.send = util.update_send(requests.Session.send, pmmargs["timeout"])
@@ -113,6 +112,11 @@ def run_plex_image_cleanup(attrs):
     if extras:
         description += f" with {', '.join(extras[:-1])}{', and ' if len(extras) > 1 else ''}{extras[-1]} set to True"
     logger.info(description)
+
+    try:
+        logger.info("Script Started", log=False, discord=True, start="script")
+    except Failed as e:
+        logger.error(f"Discord URL Error: {e}")
     report = []
     messages = []
     try:
@@ -121,11 +125,6 @@ def run_plex_image_cleanup(attrs):
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
         logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
         do_metadata = mode in ["report", "move", "remove"]
-
-        try:
-            logger.info("Script Started", log=False, discord=True)
-        except Failed as e:
-            logger.error(f"Discord URL Error: {e}")
 
         # Check Plex Path
         if not pmmargs["plex"]:
@@ -330,7 +329,8 @@ def run_plex_image_cleanup(attrs):
                     space = util.format_bytes(logger["size"])
                     logger.info(f"{modes[mode]['space']}: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    report.append([(f"{modes[mode]['ing']} Bloat Images", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths)} Files")])
+                    report.append([(f"{modes[mode]['ing']} Bloat Images", "")])
+                    report.append([("", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):
@@ -379,7 +379,8 @@ def run_plex_image_cleanup(attrs):
                     space = util.format_bytes(logger["size"])
                     logger.info(f"Space Recovered: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    report.append([("Removing PIC Restore Bloat Images", f"{space} of Space Recovered Removing {len(del_paths)} Files")])
+                    report.append([("Removing PIC Restore Bloat Images", "")])
+                    report.append([("", f"{space} of Space Recovered Removing {len(del_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
         except Failed as e:
             logger.error(f"Metadata Error: {e}")
@@ -409,7 +410,8 @@ def run_plex_image_cleanup(attrs):
             space = util.format_bytes(logger["size"])
             logger.info(f"Space Recovered: {space}")
             logger.info(f"Runtime: {logger.runtime()}")
-            report.append([("Remove PhotoTranscoder Images", f"{space} of Space Recovered Removing {len(transcode_images)} Files")])
+            report.append([("Remove PhotoTranscoder Images", "")])
+            report.append([("", f"{space} of Space Recovered Removing {len(transcode_images)} Files")])
             report.append([("Scan Time", f"{logger.runtime('transcode_scan')}"), ("Remove Time", f"{logger.runtime('transcode')}")])
 
         # Plex Operations
@@ -444,7 +446,7 @@ def run_plex_image_cleanup(attrs):
     logger.error_report()
     logger.switch()
     report.append([(f"{script_name} Finished", "")])
-    report.append([("Total Runtime", f"{logger.runtime()}")])
+    report.append([("Total Runtime", f"{logger.runtime('script')}")])
     logger.report(f"{script_name} Summary", description=description, rows=report, width=18, discord=True)
     logger.remove_main_handler()
 
