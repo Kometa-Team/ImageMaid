@@ -20,7 +20,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: meisnate12
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up QEMU
@@ -44,14 +44,13 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_REPO }}:${{ steps.get_version.outputs.VERSION }}
+          tags: meisnate12/${{ secrets.DOCKER_REPO }}:${{ steps.get_version.outputs.VERSION }}
 
       - name: Discord Success Notification
         uses: meisnate12/discord-notifications@master
         if: success()
         with:
-          webhook_id: ${{ secrets.BUILD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.BUILD_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
           title: "${{ steps.get_version.outputs.VERSION }} build: **Success**"
           url: https://github.com/meisnate12/${{ secrets.GITHUB }}/actions/runs/${{ github.run_id }}
           username: Metabot
@@ -63,8 +62,7 @@ jobs:
         uses: meisnate12/discord-notifications@master
         if: failure()
         with:
-          webhook_id: ${{ secrets.BUILD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.BUILD_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
           message: <@&1079153184007790652>
           title: "${{ steps.get_version.outputs.VERSION }} build: **Failure**"
           color: 0xe30c43

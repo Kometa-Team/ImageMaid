@@ -20,7 +20,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          username: meisnate12
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up QEMU
@@ -42,13 +42,12 @@ jobs:
             "BRANCH_NAME=develop"
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_REPO }}:develop
+          tags: meisnate12/${{ secrets.DOCKER_REPO }}:develop
 
       - name: Send Discord Commit Notification
         uses: meisnate12/discord-notifications@master
         with:
-          webhook_id: ${{ secrets.DEVELOP_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.DEVELOP_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.DEVELOP_WEBHOOK }}
           title: ${{ secrets.NAME }} Develop Commits
           message: "${{ secrets.DEVELOP_TAG }} - An update to ${{ secrets.NAME }} has been published and is available to users of the **develop** branch."
           commits: "true"
@@ -59,8 +58,7 @@ jobs:
         uses: meisnate12/discord-notifications@master
         if: success()
         with:
-          webhook_id: ${{ secrets.BUILD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.BUILD_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
           title: "develop build: **Success**"
           url: https://github.com/meisnate12/${{ secrets.GITHUB }}/actions/runs/${{ github.run_id }}
           username: Metabot
@@ -72,8 +70,7 @@ jobs:
         uses: meisnate12/discord-notifications@master
         if: failure()
         with:
-          webhook_id: ${{ secrets.BUILD_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.BUILD_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
           message: <@&1079153184007790652>
           title: "develop build: **Failure**"
           color: 0xe30c43

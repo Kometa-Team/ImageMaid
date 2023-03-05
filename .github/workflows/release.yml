@@ -14,8 +14,7 @@ jobs:
       - name: Send Discord Release Notification
         uses: meisnate12/discord-notifications@master
         with:
-          webhook_id: ${{ secrets.RELEASE_WEBHOOK_ID }}
-          webhook_token: ${{ secrets.RELEASE_WEBHOOK_TOKEN }}
+          webhook_id_token: ${{ secrets.RELEASE_WEBHOOK }}
           release: true
           title: ${{ secrets.NAME }} Release VERSION
           message: "${{ secrets.RELEASE_TAG }} - A new version of ${{ secrets.NAME }} has been released and is available to all users"

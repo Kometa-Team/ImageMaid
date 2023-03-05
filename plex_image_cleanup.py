@@ -4,6 +4,10 @@ from contextlib import closing
 from datetime import datetime
 from urllib.parse import quote
 
+if sys.version_info[0] != 3 or sys.version_info[1] < 11:
+    print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
+    sys.exit(0)
+
 try:
     import plexapi, requests
     from num2words import num2words
@@ -17,10 +21,6 @@ try:
     from tqdm import tqdm
 except (ModuleNotFoundError, ImportError):
     print("Requirements Error: Requirements are not installed")
-    sys.exit(0)
-
-if sys.version_info[0] != 3 or sys.version_info[1] < 11:
-    print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
     sys.exit(0)
 
 def not_failed(exception):
