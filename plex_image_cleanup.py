@@ -55,7 +55,7 @@ modes = {
 mode_descriptions = '\n\t'.join([f"{m}: {d}" for m, d in modes.items()])
 sc_options = ["mode", "photo-transcoder", "empty-trash", "clean-bundles", "optimize-db"]
 options = [
-    {"arg": "p",  "key": "plex",             "env": "PLEX_PATH",        "type": "str",  "default": None,     "help": "Path to the Plex Config Folder (Contains Folders: Cache, Metadata, Plug-in Support)."},
+    {"arg": "p",  "key": "plex",             "env": "PLEX_PATH",        "type": "str",  "default": None,     "help": "Path to the Plex Config Directory (Contains Directories: Cache, Metadata, Plug-in Support)."},
     {"arg": "m",  "key": "mode",             "env": "MODE",             "type": "str",  "default": "report", "help": f"Global Mode to Run the Script in ({', '.join(modes)}). (Default: report)"},
     {"arg": "sc", "key": "schedule",         "env": "SCHEDULE",         "type": "str",  "default": None,     "help": "Schedule to run in continuous mode."},
     {"arg": "u",  "key": "url",              "env": "PLEX_URL",         "type": "str",  "default": None,     "help": "Plex URL of the Server you want to connect to."},
@@ -94,6 +94,7 @@ def run_plex_image_cleanup(attrs):
     do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
     do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
     do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
+    local_run = pmmargs["local"]
     if "mode" in attrs and attrs["mode"]:
         mode = str(attrs["mode"]).lower()
     elif pmmargs["mode"]:
@@ -126,6 +127,9 @@ def run_plex_image_cleanup(attrs):
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
         logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
         do_metadata = mode in ["report", "move", "remove"]
+        if do_metadata and not local_run and not pmmargs["url"] and not pmmargs["token"]:
+            local_run = True
+            logger.warning("No Plex URL and Plex Token Given assuming Local Run")
 
         # Check Plex Path
         if not pmmargs["plex"]:
@@ -138,21 +142,20 @@ def run_plex_image_cleanup(attrs):
         databases_dir = os.path.join(pmmargs["plex"], "Plug-in Support", "Databases")
         meta_dir = os.path.join(pmmargs["plex"], "Metadata")
         restore_dir = os.path.join(pmmargs["plex"], "PIC Restore")
+
         if not os.path.exists(pmmargs["plex"]):
-            raise Failed(f"Folder Error: Plex Databases Folder Path Not Found: {os.path.abspath(pmmargs['plex'])}")
-        elif not os.path.exists(transcoder_dir) or not os.path.exists(databases_dir) or not os.path.exists(meta_dir):
-            contents = "\n                  ".join(os.listdir(pmmargs["plex"]))
-            raise Failed(f'Folder Error: Plex Databases Folder Path: {pmmargs["plex"]}\n'
-                         f'              Should contain "Cache", "Metadata", and "Plug-in Support"\n'
-                         f'              Contents:\n                  {contents}')
+            raise Failed(f"Directory Error: Plex Databases Directory Not Found: {os.path.abspath(pmmargs['plex'])}")
+        elif local_run and not os.path.exists(databases_dir):
+            raise Failed(f"Directory Error: Plug-in Support\\Databases Directory Not Found: {databases_dir}")
+        elif mode != "nothing" and not os.path.exists(meta_dir):
+            raise Failed(f"Directory Error: Metadata Directory Not Found: {meta_dir}")
+        elif do_transcode and not os.path.exists(transcoder_dir):
+            logger.error(f"Directory Error: PhotoTranscoder Directory Not Found and will not be cleaned: {transcoder_dir}")
+            do_transcode = False
 
         # Connection to Plex
-        if do_metadata and not pmmargs["url"] and not pmmargs["token"]:
-            pmmargs["local"] = True
-            logger.warning("No Plex URL and Plex Token Given assuming Local Run")
-
         server = None
-        if do_trash or do_bundles or do_optimize or (do_metadata and not pmmargs["local"]):
+        if do_trash or do_bundles or do_optimize or (do_metadata and not local_run):
             logger.info("Connecting To Plex")
             if not pmmargs["url"]:
                 raise Failed("Args Error: No Plex URL Provided")
@@ -175,7 +178,7 @@ def run_plex_image_cleanup(attrs):
 
         try:
             if do_metadata and os.path.exists(restore_dir):
-                logger.error(f"{mode} mode invalid while the PIC Restore Folder exists.", discord=True, rows=[
+                logger.error(f"{mode} mode invalid while the PIC Restore Directory exists.", discord=True, rows=[
                     [("PIC Path", restore_dir)],
                     [("Mode Options",
                       "Mode: restore (Restore the bloat images back into Plex)\nMode: remove (Remove the bloat images)")]
@@ -187,7 +190,7 @@ def run_plex_image_cleanup(attrs):
             if do_metadata:
 
                 # Check if Running
-                if pmmargs["local"]:
+                if local_run:
                     if any([os.path.exists(os.path.join(databases_dir, f"{plex_db_name}-{t}")) for t in ["shm", "wal"]]):
                         temp_db_warning = "At least one of the SQLite temp files is next to the Plex DB; this indicates Plex is still running\n" \
                                           "and copying the DB carries a small risk of data loss as the temp files may not have updated the\n" \
@@ -213,20 +216,20 @@ def run_plex_image_cleanup(attrs):
                         else:
                             logger.info(f"Existing database too old to use (age: {time_ago})")
                     else:
-                        logger.warning(f"Existing Database not found {'making' if pmmargs['local'] else 'downloading'} a new copy")
+                        logger.warning(f"Existing Database not found {'making' if local_run else 'downloading'} a new copy")
 
                 report.append([("Database", "")])
                 fields = []
                 if is_usable:
                     report.append([("", "Using Existing Database")])
                 else:
-                    report.append([("", f"{'Copied' if pmmargs['local'] else 'Downloaded'} New Database")])
+                    report.append([("", f"{'Copied' if local_run else 'Downloaded'} New Database")])
                     if os.path.exists(dbpath):
                         os.remove(dbpath)
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                     os.makedirs(temp_dir)
-                    if pmmargs["local"]:
+                    if local_run:
                         logger.info(f"Copying database from {os.path.join(databases_dir, plex_db_name)}", start="database")
                         util.copy_with_progress(os.path.join(databases_dir, plex_db_name), dbpath, description=f"Copying database file to: {dbpath}")
                     else:
@@ -273,11 +276,11 @@ def run_plex_image_cleanup(attrs):
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                     if not os.path.exists(dbpath):
-                        raise Failed(f"File Error: Database File Could not {'Copied' if pmmargs['local'] else 'Downloaded'}")
-                    logger.info(f"Plex Database {'Copy' if pmmargs['local'] else 'Download'} Complete")
-                    logger.info(f"Database {'Copied' if pmmargs['local'] else 'Downloaded'} to: {dbpath}")
+                        raise Failed(f"File Error: Database File Could not {'Copied' if local_run else 'Downloaded'}")
+                    logger.info(f"Plex Database {'Copy' if local_run else 'Download'} Complete")
+                    logger.info(f"Database {'Copied' if local_run else 'Downloaded'} to: {dbpath}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    fields.append(("Copied" if pmmargs["local"] else "Downloaded", f"{logger.runtime('database')}"))
+                    fields.append(("Copied" if local_run else "Downloaded", f"{logger.runtime('database')}"))
 
                 # Query DB
                 urls = []
@@ -335,7 +338,7 @@ def run_plex_image_cleanup(attrs):
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):
-                    raise Failed(f"Restore Failed: PIC Restore Folder does not exist: {restore_dir}")
+                    raise Failed(f"Restore Failed: PIC Restore Directory does not exist: {restore_dir}")
                 if mode == "restore":
                     logger.separator("Restore Renamed Bloat Images")
 
@@ -358,11 +361,11 @@ def run_plex_image_cleanup(attrs):
                     report.append([("Restore Renamed Bloat Images", "")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
                 else:
-                    logger.separator("Removing PIC Restore Folder")
+                    logger.separator("Removing PIC Restore Directory")
 
                     logger.info("Scanning PIC Restore for Bloat Images to Remove", start="scanning")
                     del_paths = [os.path.join(r, f) for r, d, fs in tqdm(os.walk(restore_dir), unit=" directories", desc="| Scanning PIC Restore for Bloat Images to Remove") for f in fs]
-                    logger.info(f"Scanning Complete: Found {len(del_paths)} Bloat Images in the PIC Folder to Remove")
+                    logger.info(f"Scanning Complete: Found {len(del_paths)} Bloat Images in the PIC Directory to Remove")
                     logger.info(f"Runtime: {logger.runtime()}")
                     logger.info()
 

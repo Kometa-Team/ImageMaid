@@ -11,7 +11,7 @@
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/meisnate12?color=%238a2be2&style=plastic)](https://github.com/sponsors/meisnate12)
 [![Sponsor or Donate](https://img.shields.io/badge/-Sponsor%2FDonate-blueviolet?style=plastic)](https://github.com/sponsors/meisnate12)
 
-Your Plex folders are growing out of control. You use overlays from [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) (PMM) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script will free up gigs of space....
+Your Plex directories are growing out of control. You use overlays from [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) (PMM) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script will free up gigs of space....
 
 As well as being able to clean the PhotoTranscoder Directory and running the Plex operations Empty Trash, Clean Bundles, and Optimize DB. 
 
@@ -75,8 +75,8 @@ python plex_image_cleanup.py
 docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw meisnate12/plex-image-cleanup
 ```
 * The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to plex.
-  * Change `<PATH_TO_CONFIG>` to a folder where your .env and other files are.
-  * Change `<PATH_TO_PLEX>` to the folder where your Plex Folder is (It contains folders: Cache, Metadata, Plug-in Support).
+  * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
+  * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
   * If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
 
 Example Docker Run command:
@@ -159,7 +159,7 @@ LOG_REQUESTS=False
 
 #### Plex Path
 
-The only required Option is the `Plex Path` Option which is the Plex Config Folder containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
+The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
 
 To set the `Plex Path` for the run: 
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
@@ -198,7 +198,7 @@ By default, the script will expect to connect to your Plex Server to download th
 
 #### Copy From Local
 
-Alternatively the database can be copied from your local config folder you supplied in the [`Plex Path`](#plex-path) Option by using the `Local DB` Option. 
+Alternatively the database can be copied from your local config directory you supplied in the [`Plex Path`](#plex-path) Option by using the `Local DB` Option. 
 
 * **Environment Variable:** `LOCAL_DB=True`
 * **Shell Command:** `-l` or `--local`
