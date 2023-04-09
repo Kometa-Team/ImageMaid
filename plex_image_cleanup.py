@@ -291,7 +291,7 @@ def run_plex_image_cleanup(attrs):
                     with closing(connection.cursor()) as cursor:
                         for field in ["user_thumb_url", "user_art_url", "user_banner_url"]:
                             cursor.execute(f"SELECT {field} AS url FROM metadata_items WHERE {field} like 'upload://%' OR {field} like 'metadata://%'")
-                            urls.extend([requests.utils.urlparse(r["url"]).path[1:] for r in cursor.fetchall() if r and r["url"]])
+                            urls.extend([requests.utils.urlparse(r["url"]).path.split("/")[-1] for r in cursor.fetchall() if r and r["url"]])
                     logger.info(f"{len(urls)} In-Use Images Found")
                     logger.info(f"Runtime: {logger.runtime()}")
                     fields.append(("Query", f"{logger.runtime('query')}"))
