@@ -11,7 +11,7 @@
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/meisnate12?color=%238a2be2&style=plastic)](https://github.com/sponsors/meisnate12)
 [![Sponsor or Donate](https://img.shields.io/badge/-Sponsor%2FDonate-blueviolet?style=plastic)](https://github.com/sponsors/meisnate12)
 
-Your Plex directories are growing out of control. You use overlays from [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) (PMM) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script will free up gigs of space....
+Your Plex directories are growing out of control. You use overlays from [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) (PMM) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script can free up gigs of space....
 
 As well as being able to clean the PhotoTranscoder Directory and running the Plex operations Empty Trash, Clean Bundles, and Optimize DB. 
 
@@ -170,16 +170,20 @@ To set the `Plex Path` for the run:
 
 How Plex Image Cleanup runs depends on the `Mode` Option that's currently set for that run.
 
-* `report`: Metadata Directory File changes will be reported but not performed.
-* `move`: Metadata Directory Files will be moved to the PIC Restore Directory. (CAN BE RESTORED)
-* `restore`: Restores the Metadata Directory Files from the PIC Restore Directory.
-* `clear`: Clears out the PIC Restore Directory. (CANNOT BE RESTORED)
-* `remove`: Metadata Directory Files will be removed. (CANNOT BE RESTORED)
-* `nothing`: Metadata Directory Files will not even be looked at.
+Here, "unused images" refers to unused uploaded images as described above.
+
+* `report`: Reports statistics on unused images [count, size] but takes no action on them [like moving or deleting].
+* `move`: Moves unused images to the PIC Restore Directory. From there they can be `restore`d or `clear`ed.
+* `restore`: Restores the unused images from the PIC Restore Directory [as created by `move`] to the Metadata Directory.  This restores Plex to its state prior to running PIC.
+* `clear`: Deletes the unused images from the PIC Restore Directory [as created by `move`]. (CANNOT BE UNDONE)
+* `remove`: Deletes the unused images from the Metadata Directory immediately, without the stop in the PIC Restore Directory. (CANNOT BE UNDONE)
+* `nothing`: Does nothing with unused images; no report, no action.
 
 To set the Global `Mode` for the run: 
 * **Environment Variable:** `MODE=remove`
 * **Shell Command:** `-m remove` or `--mode remove`
+
+`report` is the default mode if you do not specify a mode.
 
 ### Database
 
