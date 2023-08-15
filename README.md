@@ -136,17 +136,14 @@ Plex Image Cleanup has multiple Global Options to change how it runs these are s
 
 ### Example .env File
 ```
+PLEX_URL=http://192.168.1.12:32400
+PLEX_TOKEN=123456789
 PLEX_PATH=C:\Plex Media Server
 MODE=report
 SCHEDULE=
-PLEX_URL=http://192.168.1.12:32400
-PLEX_TOKEN=123456789
 DISCORD=https://discord.com/api/webhooks/###################/####################################################################
 TIMEOUT=600
 SLEEP=60
-IGNORE_RUNNING=False
-LOCAL_DB=False
-USE_EXISTING=False
 PHOTO_TRANSCODER=False
 EMPTY_TRASH=False
 CLEAN_BUNDLES=False
@@ -157,9 +154,20 @@ LOG_REQUESTS=False
 
 ### Base Options
 
+#### Plex URL & Token
+
+The script will expect to connect to your Plex Server using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
+
+* **Environment Variables:** 
+  * `PLEX_URL=http://192.168.1.12:32400`
+  * `PLEX_TOKEN=123456789`
+* **Shell Commands:** 
+  * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
+  * `-t "123456789"` or `--token "123456789"`
+
 #### Plex Path
 
-The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
+The only other required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
 
 To set the `Plex Path` for the run: 
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
@@ -180,44 +188,6 @@ How Plex Image Cleanup runs depends on the `Mode` Option that's currently set fo
 To set the Global `Mode` for the run: 
 * **Environment Variable:** `MODE=remove`
 * **Shell Command:** `-m remove` or `--mode remove`
-
-### Database
-
-The script needs to query the server's plex database to make sure it doesn't remove actively selected images. 
-
-#### Download From Plex API
-
-By default, the script will expect to connect to your Plex Server to download the Database using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
-
-* **Environment Variables:** 
-  * `PLEX_URL=http://192.168.1.12:32400`
-  * `PLEX_TOKEN=123456789`
-* **Shell Commands:** 
-  * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
-  * `-t "123456789"` or `--token "123456789"`
-
-#### Copy From Local
-
-Alternatively the database can be copied from your local config directory you supplied in the [`Plex Path`](#plex-path) Option by using the `Local DB` Option. 
-
-* **Environment Variable:** `LOCAL_DB=True`
-* **Shell Command:** `-l` or `--local`
-
-**IMPORTANT! When Copying the Local Database, it is recommended to restart Plex before running this script and to make sure Plex is idle.**
-
-Restarting allows for all temp SQLite files to be written to the primary Plex DB ensuring that all currently selected posters are properly known and preserved.
-
-The script will not run when the temp SQLite files are found. To ignore this error, use the `Ignore Running` Option.
-
-* **Environment Variable:** `IGNORE_RUNNING=True` 
-* **Shell Command:** `-i` or `--ignore`
-
-#### Use Existing
-
-A previously downloaded or copied database can be used if it's less than 2 hours old by using the `Use Existing` Option. If the database is more than 2 hours old a new one will be downloaded or copied.
-
-* **Environment Variable:** `USE_EXISTING=True`
-* **Shell Command:** `-e` or `--existing`
 
 ### Other Operations
 
