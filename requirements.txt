@@ -3,7 +3,7 @@ numpy==1.24.3
 opencv-python==4.7.0.72
 pillow==9.5.0
 PlexAPI==4.13.4
-pmmutils==0.5.2
+pmmutils==0.5.3
 requests==2.31.0
 retrying==1.3.4
 tmdbapis==1.2.0
