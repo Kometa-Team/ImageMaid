@@ -104,7 +104,6 @@ def run_plex_image_cleanup(attrs):
     do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
     do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
     do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
-    local_run = pmmargs["local"]
     if "mode" in attrs and attrs["mode"]:
         mode = str(attrs["mode"]).lower()
     elif pmmargs["mode"]:
@@ -137,9 +136,6 @@ def run_plex_image_cleanup(attrs):
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
         logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
         do_metadata = mode in ["report", "move", "remove"]
-        if do_metadata and not local_run and not pmmargs["url"] and not pmmargs["token"]:
-            local_run = True
-            logger.warning("No Plex URL and Plex Token Given assuming Local Run")
 
         # Check Plex Path
         if not pmmargs["plex"]:
@@ -149,14 +145,11 @@ def run_plex_image_cleanup(attrs):
             logger.warning(f"No Plex Path Provided. Using default: {pmmargs['plex']}")
         pmmargs["plex"] = Path(pmmargs["plex"]).resolve()
         transcoder_dir = pmmargs["plex"] / "Cache" / "PhotoTranscoder"
-        databases_dir = pmmargs["plex"] / "Plug-in Support" / "Databases"
         meta_dir = pmmargs["plex"] / "Metadata"
         restore_dir = pmmargs["plex"] / "PIC Restore"
 
         if not pmmargs["plex"].exists():
             raise Failed(f"Directory Error: Plex Databases Directory Not Found: {pmmargs['plex']}")
-        elif local_run and not databases_dir.exists():
-            raise Failed(f"Directory Error: Plug-in Support\\Databases Directory Not Found: {databases_dir}")
         elif mode != "nothing" and not meta_dir.exists():
             raise Failed(f"Directory Error: Metadata Directory Not Found: {meta_dir}")
         elif do_transcode and not transcoder_dir.exists():
