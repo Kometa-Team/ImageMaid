@@ -249,18 +249,22 @@ def run_plex_image_cleanup(attrs):
                                 local_path = Path(meta_dirs[item.type]) / guid_hash[0] / f"{guid_hash[1:]}.bundle" / "Uploads" / resource_path
                                 source_path = meta_dir / local_path
 
-                                section_images += 1
-                                total_size += source_path.stat().st_size
-                                if mode == "move":
-                                    destination_path = restore_dir / local_path.with_suffix(".jpg")
-                                    msg = f"MOVE: {source_path} --> {destination_path}"
-                                    destination_path.parent.mkdir(parents=True, exist_ok=True)
-                                    source_path.rename(destination_path)
-                                elif mode == "remove":
-                                    msg = f"REMOVE: {source_path}"
-                                    source_path.unlink()
+                                if source_path.exists():
+                                    section_images += 1
+                                    total_size += source_path.stat().st_size
+                                    if mode == "move":
+                                        destination_path = restore_dir / local_path.with_suffix(".jpg")
+                                        msg = f"MOVE: {source_path} --> {destination_path}"
+                                        destination_path.parent.mkdir(parents=True, exist_ok=True)
+                                        source_path.rename(destination_path)
+                                    elif mode == "remove":
+                                        msg = f"REMOVE: {source_path}"
+                                        source_path.unlink()
+                                    else:
+                                        msg = f"BLOAT FILE: {source_path}"
                                 else:
-                                    msg = f"BLOAT FILE: {source_path}"
+                                    msg = f"BLOAT FILE NOT FOUND: {source_path}"
+
                                 if mode == "report":
                                     logger.debug(msg)
                                 else:
