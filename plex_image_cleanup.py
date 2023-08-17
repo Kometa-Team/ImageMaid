@@ -158,7 +158,7 @@ def run_plex_image_cleanup(attrs):
         restore_dir = pmmargs["plex"] / "PIC Restore"
 
         if not pmmargs["plex"].exists():
-            raise Failed(f"Directory Error: Plex Databases Directory Not Found: {pmmargs['plex']}")
+            raise Failed(f"Directory Error: Plex Directory Not Found: {pmmargs['plex']}")
         elif mode != "nothing" and not meta_dir.exists():
             raise Failed(f"Directory Error: Metadata Directory Not Found: {meta_dir}")
         elif do_transcode and not transcoder_dir.exists():
@@ -294,7 +294,7 @@ def run_plex_image_cleanup(attrs):
 
                     logger.info("Restoring Renamed Bloat Images", start="work")
                     for source_path in tqdm(restore_images, unit=" restored", desc="| Restoring Renamed Bloat Images"):
-                        destination_path = (meta_dir / str(source_path).removeprefix(restore_dir)[1:]).with_suffix(".jpg")
+                        destination_path = (meta_dir / str(source_path).removeprefix(str(restore_dir))[1:]).with_suffix(".jpg")
                         messages.append(f"RENAME: {source_path}\n  ----> {destination_path}\n")
                         destination_path.parent.mkdir(exist_ok=True)
                         source_path.rename(destination_path)
