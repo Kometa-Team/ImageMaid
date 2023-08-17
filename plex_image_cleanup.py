@@ -287,7 +287,7 @@ def run_plex_image_cleanup(attrs):
                     logger.separator("Restore Renamed Bloat Images")
 
                     logger.info("Scanning for Renamed Bloat Images to Restore", start="scanning")
-                    restore_images = [f for f in tqdm(glob.iglob(os.path.join(restore_dir, "**", "*.jpg"), recursive=True), unit=" image", desc="| Scanning for Renamed Bloat Images to Restore")]
+                    restore_images = [Path(f) for f in tqdm(glob.iglob(os.path.join(restore_dir, "**", "*.jpg"), recursive=True), unit=" image", desc="| Scanning for Renamed Bloat Images to Restore")]
                     logger.info(f"Scanning Complete: Found {len(restore_images)} Renamed Bloat Images to Restore")
                     logger.info(f"Runtime: {logger.runtime()}")
                     logger.info()
