@@ -245,7 +245,7 @@ def run_plex_image_cleanup(attrs):
                                 if mode == "move":
                                     destination_path = restore_dir / local_path.with_suffix(".jpg")
                                     msg = f"MOVE: {source_path} --> {destination_path}"
-                                    destination_path.parent.mkdir(exist_ok=True)
+                                    destination_path.parent.mkdir(parents=True, exist_ok=True)
                                     source_path.rename(destination_path)
                                 elif mode == "remove":
                                     msg = f"REMOVE: {source_path}"
