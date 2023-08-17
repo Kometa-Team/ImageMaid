@@ -98,31 +98,40 @@ def pic_thread(attrs):
         executor.submit(run_plex_image_cleanup, *[attrs])
 
 def run_plex_image_cleanup(attrs):
-    logger.header(pmmargs, sub=True, discord_update=True)
-    logger.separator("Validating Options", space=False, border=False)
-    do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else pmmargs["photo-transcoder"]
-    do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
-    do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
-    do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
-    if "mode" in attrs and attrs["mode"]:
-        mode = str(attrs["mode"]).lower()
-    elif pmmargs["mode"]:
-        mode = str(pmmargs["mode"]).lower()
-    else:
-        mode = "report"
-    description = f"Running in {mode.capitalize()} Mode"
-    extras = []
-    if do_trash:
-        extras.append("Empty Trash")
-    if do_bundles:
-        extras.append("Clean Bundles")
-    if do_optimize:
-        extras.append("Optimize DB")
-    if do_transcode:
-        extras.append("PhotoTrancoder")
-    if extras:
-        description += f" with {', '.join(extras[:-1])}{', and ' if len(extras) > 1 else ''}{extras[-1]} set to True"
-    logger.info(description)
+    try:
+        logger.header(pmmargs, sub=True, discord_update=True)
+        logger.separator("Validating Options", space=False, border=False)
+        do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else pmmargs["photo-transcoder"]
+        do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
+        do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
+        do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
+        if "mode" in attrs and attrs["mode"]:
+            mode = str(attrs["mode"]).lower()
+        elif pmmargs["mode"]:
+            mode = str(pmmargs["mode"]).lower()
+        else:
+            mode = "report"
+        description = f"Running in {mode.capitalize()} Mode"
+        extras = []
+        if do_trash:
+            extras.append("Empty Trash")
+        if do_bundles:
+            extras.append("Clean Bundles")
+        if do_optimize:
+            extras.append("Optimize DB")
+        if do_transcode:
+            extras.append("PhotoTrancoder")
+        if extras:
+            description += f" with {', '.join(extras[:-1])}{', and ' if len(extras) > 1 else ''}{extras[-1]} set to True"
+        logger.info(description)
+    except Exception as e:
+        logger.stacktrace()
+        logger.critical(e, discord=True)
+        raise
+    except KeyboardInterrupt:
+        logger.separator(f"User Canceled Run {script_name}")
+        logger.remove_main_handler()
+        raise
 
     try:
         logger.info("Script Started", log=False, discord=True, start="script")
