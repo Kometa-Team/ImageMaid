@@ -228,6 +228,7 @@ def run_plex_image_cleanup(attrs):
 
                 total_images = 0
                 total_size = 0
+                paths_worked = []
                 for section in server.library.sections():
                     section_images = 0
                     logger.info(f"Scanning Library: {section.title}", start=section.title)
@@ -248,6 +249,9 @@ def run_plex_image_cleanup(attrs):
 
                                 local_path = Path(meta_dirs[item.type]) / guid_hash[0] / f"{guid_hash[1:]}.bundle" / "Uploads" / resource_path
                                 source_path = meta_dir / local_path
+                                if source_path in paths_worked:
+                                    continue
+                                paths_worked.append(source_path)
 
                                 if source_path.exists():
                                     section_images += 1
