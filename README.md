@@ -17,7 +17,7 @@ As well as being able to clean the PhotoTranscoder Directory and running the Ple
 
 Special Thanks to [bullmoose20](https://github.com/bullmoose20) for the original [Plex Bloat Fix](https://github.com/bullmoose20/Plex-Stuff#plex-bloat-fix) (PBF) Script this is based on.
 
-![](https://raw.githubusercontent.com/meisnate12/Plex-Image-Cleanup/master/cleanup.png)
+![](cleanup.png)
 
 This image shows which photos would be removed. Red is removed, Green is kept because it is the actively selected poster. The other two come standard from Plex when the posters are retrieved so the script will not touch those either:
 
@@ -75,9 +75,12 @@ python plex_image_cleanup.py
 docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw meisnate12/plex-image-cleanup
 ```
 * The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to plex.
-  * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
-  * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
-  * If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
+
+    * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
+ 
+    * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
+
+    * If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
 
 Example Docker Run command:
 
@@ -115,14 +118,19 @@ When running Plex Image Cleanup, make sure that you are not running any tools wh
 It is recommended to schedule Plex Image Cleanup after the above tools or Plex's Scheduled Tasks.
 
 An example schedule would be:
+
 * 00:00-02:00 - TitleCardMaker
+
 * 02:00-05:00 - Plex Scheduled Tasks
+
 * 05:00-07:00 - Plex Meta Manager
+
 * 07:00-09:00 - Plex Image Cleanup
 
 ### Tips
 
 * Ensure you have proper permissions to delete/rename or the script will fail
+
 * For performance purposes, it's recommended to run locally so that accessing the files is not done over a network share
 
 ## Global Options
@@ -130,8 +138,11 @@ An example schedule would be:
 Plex Image Cleanup has multiple Global Options to change how it runs these are set in 3 different ways listed in priority order:
 
 1. Setting the Environment Variable.
+
 2. Adding the Environment Variables to `config/.env` 
-   * `example.env` is included as an example but is not read by the script it will only read a file specifically called `.env`.
+
+    * `example.env` is included as an example but is not read by the script it will only read a file specifically called `.env`.
+
 3. Use the Shell Command when launching.
 
 ### Example .env File
@@ -159,10 +170,15 @@ LOG_REQUESTS=False
 The script will expect to connect to your Plex Server using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 
 * **Environment Variables:** 
+
   * `PLEX_URL=http://192.168.1.12:32400`
+
   * `PLEX_TOKEN=123456789`
+
 * **Shell Commands:** 
+
   * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
+
   * `-t "123456789"` or `--token "123456789"`
 
 #### Plex Path
@@ -170,9 +186,12 @@ The script will expect to connect to your Plex Server using your `Plex URL` and 
 The only other required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
 
 To set the `Plex Path` for the run: 
+
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
+
 * **Shell Command:** `-p "C:\Plex Media Server"` or `--plex "C:\Plex Media Server"`
-* Will also check `/plex` relative to the base directory of the script if neither of the above are specified.
+
+* * Will also check `/plex` relative to the base directory of the script if neither of the above are specified.
 
 #### Mode
 
@@ -181,14 +200,21 @@ How Plex Image Cleanup runs depends on the `Mode` Option that's currently set fo
 Here, "unused images" refers to unused uploaded images as described above.
 
 * `report`: Reports statistics on unused images [count, size] but takes no action on them [like moving or deleting].
+
 * `move`: Moves unused images to the PIC Restore Directory. From there they can be `restore`d or `clear`ed.
+
 * `restore`: Restores the unused images from the PIC Restore Directory [as created by `move`] to the Metadata Directory.  This restores Plex to its state prior to running PIC.
+
 * `clear`: Deletes the unused images from the PIC Restore Directory [as created by `move`]. (CANNOT BE UNDONE)
+
 * `remove`: Deletes the unused images from the Metadata Directory immediately, without the stop in the PIC Restore Directory. (CANNOT BE UNDONE)
+
 * `nothing`: Does nothing with unused images; no report, no action.
 
 To set the Global `Mode` for the run: 
+
 * **Environment Variable:** `MODE=remove`
+
 * **Shell Command:** `-m remove` or `--mode remove`
 
 **NOTE: `report` is the default mode if you do not specify a mode.**
@@ -200,21 +226,25 @@ In addition to cleaning the Plex Metadata Directory for custom images the script
 #### Photo Transcoder
 
 * **Environment Variable:** `PHOTO_TRANSCODER=True`
+
 * **Shell Command:** `-pt` or `--photo-transcoder`
 
 #### Empty Trash
 
 * **Environment Variable:** `EMPTY_TRASH=True`
+
 * **Shell Command:** `-et` or `--empty-trash`
 
 #### Clean Bundles
 
 * **Environment Variable:** `CLEAN_BUNDLES=True`
+
 * **Shell Command:** `-cb` or `--clean-bundles`
 
 #### Optimize DB
 
 * **Environment Variable:** `OPTIMIZE_DB=True`
+
 * **Shell Command:** `-od` or `--optimize-db`
 
 ### Other Options
@@ -224,6 +254,7 @@ In addition to cleaning the Plex Metadata Directory for custom images the script
 Discord Webhook URL to send notifications to.
 
 * **Environment Variable:** `DISCORD=https://discord.com/api/webhooks/###/###`
+
 * **Shell Command:** `-d "https://discord.com/api/webhooks/###/###"` or `--discord "https://discord.com/api/webhooks/###/###"`
 
 #### Timeout
@@ -231,7 +262,9 @@ Discord Webhook URL to send notifications to.
 Connection Timeout in seconds that's greater than 0.
 
 * **Default:** `600`
+
 * **Environment Variable:** `TIMEOUT=1000`
+
 * **Shell Command:** `-ti 1000` or `--timeout 1000`
 
 #### Sleep
@@ -239,7 +272,9 @@ Connection Timeout in seconds that's greater than 0.
 Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that's greater than 0 .
 
 * **Default:** `60`
+
 * **Environment Variable:** `SLEEP=100`
+
 * **Shell Command:** `-s 100` or `--sleep 100`
 
 #### Trace
@@ -247,6 +282,7 @@ Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that'
 Run with extra trace logs.
 
 * **Environment Variable:** `TRACE=True`
+
 * **Shell Command:** `-tr` or `--trace`
 
 #### Log Requests
@@ -254,6 +290,7 @@ Run with extra trace logs.
 Run with every request and file action logged.
 
 * **Environment Variable:** `LOG_REQUESTS=True`
+
 * **Shell Command:** `-lr` or `--log-requests`
 
 ### Continuous Schedule
@@ -263,6 +300,7 @@ Plex Image Cleanup can be run either immediately or on a schedule. The default b
 Add a Schedule Block to the `Schedule` Option to run Plex Image Cleanup using a continuous schedule.
 
 * **Shell Command:** `-sc` or `--schedule "05:00|weekly(sunday)"`
+
 * **Environment Variable:** `SCHEDULE="05:00|weekly(sunday)"`
 
 ### Schedule Blocks
@@ -276,15 +314,24 @@ You can have multiple Schedule Blocks separated with a `,` (`time|frequency,time
 #### Schedule Block Parts
 
 * `time`: Time in the day the run will occur.
-  * **Time:** `HH:MM` 24-hour format
-  * **Examples:** `00:00`-`23:59` 
-* `frequency`: Frequency to schedule the run. 
-  * **Frequencies:** `daily`, `weekly(day of week)`, or `monthly(day of month)`
-  * **Examples:** `weekly(sunday)` or `monthly(1)`
-* `options`: Options changed for the run in the format `option=value`, with multiple options separated with a `;`. 
-  * **Options:** `mode`, `photo-transcoder`, `empty-trash`, `clean-bundles`, or `optimize-db`
-  * **Examples:** `mode=nothing` or `photo-transcoder=true`
-  * **NOTE: This overrides the currently set global value for just this one scheduled run**
+
+    * **Time:** `HH:MM` 24-hour format
+  
+    * **Examples:** `00:00`-`23:59`
+  
+* `frequency`: Frequency to schedule the run.
+
+    * **Frequencies:** `daily`, `weekly(day of week)`, or `monthly(day of month)`
+  
+    * **Examples:** `weekly(sunday)` or `monthly(1)`
+  
+* `options`: Options changed for the run in the format `option=value`, with multiple options separated with a `;`.
+
+    * **Options:** `mode`, `photo-transcoder`, `empty-trash`, `clean-bundles`, or `optimize-db`
+  
+    * **Examples:** `mode=nothing` or `photo-transcoder=true`
+  
+    * **NOTE: This overrides the currently set global value for just this one scheduled run**
 
 ### Schedule Block Example
 
@@ -295,11 +342,20 @@ SCHEDULE=08:00|weekly(sunday)|mode=clear,09:00|weekly(sunday)|mode=move,10:00|mo
 The example above is detailed out below to better explain how it works:
 
 * Run at 8:00 AM on Sundays with the Options: `mode: clear`
+
   * `08:00|weekly(sunday)|mode=remove`
+  
   * `time |frequency     |options`
+  
 * Run at 9:00 AM on Sundays with the Options: `mode: move`
+
   * `09:00|weekly(sunday)|mode=move`
+  
   * `time |frequency     |options`
-* Run at 10:00 AM on the 1st of each month with the Options: `mode: nothing` and `photo-transcoder: true` 
+  
+* Run at 10:00 AM on the 1st of each month with the Options: `mode: nothing` and `photo-transcoder: true`
+
   * `10:00|monthly(1)|mode=nothing;photo-transcoder=true`
+  
   * `time |frequency |options`
+  
