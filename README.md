@@ -190,8 +190,8 @@ To set the `Plex Path` for the run:
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
 
 * **Shell Command:** `-p "C:\Plex Media Server"` or `--plex "C:\Plex Media Server"`
-
-* * Will also check `/plex` relative to the base directory of the script if neither of the above are specified.
+ 
+**Will also check `/plex` relative to the base directory of the script if neither of the above are specified.**
 
 #### Mode
 
@@ -343,19 +343,19 @@ The example above is detailed out below to better explain how it works:
 
 * Run at 8:00 AM on Sundays with the Options: `mode: clear`
 
-  * `08:00|weekly(sunday)|mode=remove`
+    * `08:00|weekly(sunday)|mode=remove`
   
-  * `time |frequency     |options`
+    * `time |frequency     |options`
   
 * Run at 9:00 AM on Sundays with the Options: `mode: move`
 
-  * `09:00|weekly(sunday)|mode=move`
+    * `09:00|weekly(sunday)|mode=move`
   
-  * `time |frequency     |options`
+    * `time |frequency     |options`
   
 * Run at 10:00 AM on the 1st of each month with the Options: `mode: nothing` and `photo-transcoder: true`
 
-  * `10:00|monthly(1)|mode=nothing;photo-transcoder=true`
+    * `10:00|monthly(1)|mode=nothing;photo-transcoder=true`
   
-  * `time |frequency |options`
+    * `time |frequency |options`
   
