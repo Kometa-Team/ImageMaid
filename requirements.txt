@@ -7,4 +7,4 @@ pmmutils==0.5.10
 requests==2.31.0
 retrying==1.3.4
 tmdbapis==1.2.6
-tqdm==4.66.1
+tqdm==4.66.2
