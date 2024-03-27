@@ -94,7 +94,6 @@ docker run -v "X:\Media\Plex Image Cleanup\config:/config:rw" -v "X:\Plex Media 
 
 Example Docker Compose file:
 ```yaml
-version: "2.1"
 services:
   plex-image-cleanup:
     image: meisnate12/plex-image-cleanup
