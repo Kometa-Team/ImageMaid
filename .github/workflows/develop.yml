@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  docker-develop:
+  docker:
     runs-on: ubuntu-latest
     steps:
 
@@ -20,7 +20,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: meisnate12
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Set up QEMU
@@ -42,40 +42,43 @@ jobs:
             "BRANCH_NAME=develop"
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: meisnate12/${{ secrets.DOCKER_REPO }}:develop
+          tags: kometateam/${{ secrets.DOCKER_REPO }}:develop
 
       - name: Send Discord Commit Notification
-        uses: meisnate12/discord-notifications@master
+        uses: Kometa-Team/discord-notifications@master
         with:
           webhook_id_token: ${{ secrets.DEVELOP_WEBHOOK }}
-          title: ${{ secrets.NAME }} Develop Commits
+          title: Commits
           message: "${{ secrets.DEVELOP_TAG }} - An update to ${{ secrets.NAME }} has been published and is available to users of the **develop** branch."
           commits: "true"
-          username: Metabot
-          avatar_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/develop/.github/pmm.png
+          username: Kobota
+          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
+          author: ${{ secrets.NAME }} Develop Release
+          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/release.png
 
       - name: Discord Success Notification
-        uses: meisnate12/discord-notifications@master
+        uses: Kometa-Team/discord-notifications@master
         if: success()
         with:
           webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
-          title: "develop build: **Success**"
-          url: https://github.com/meisnate12/${{ secrets.GITHUB }}/actions/runs/${{ github.run_id }}
-          username: Metabot
-          avatar_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/develop/.github/pmm.png
-          author: ${{ secrets.NAME }} Docker
-          author_icon_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/develop/.github/docker.png
+          title: "${{ secrets.REPO_NAME }} develop: **Build Successful**"
+          url: https://github.com/Kometa-Team/${{ secrets.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: 844716
+          username: Kobota
+          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
+          author: Docker
+          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/docker.png
 
       - name: Discord Failure Notification
-        uses: meisnate12/discord-notifications@master
+        uses: Kometa-Team/discord-notifications@master
         if: failure()
         with:
           webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
           message: <@&1079153184007790652>
-          title: "develop build: **Failure**"
-          color: 0xe30c43
-          url: https://github.com/meisnate12/${{ secrets.GITHUB }}/actions/runs/${{ github.run_id }}
-          username: Metabot
-          avatar_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/develop/.github/pmm.png
-          author: ${{ secrets.NAME }} Docker
-          author_icon_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/develop/.github/docker.png
+          title: "${{ secrets.REPO_NAME }} develop: **Build Failed**"
+          url: https://github.com/Kometa-Team/${{ secrets.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: 14879811
+          username: Kobota
+          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
+          author: Docker
+          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/docker.png

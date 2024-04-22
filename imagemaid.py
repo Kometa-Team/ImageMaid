@@ -11,11 +11,10 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 11:
 try:
     import plexapi, requests
     from num2words import num2words
-    from pmmutils import args, logging, schedule, util
+    from kometautils import schedule, util, KometaLogger, KometaArgs, Continue, Failed
+    from kometautils.args import parse_bool
     from plexapi.exceptions import Unauthorized
     from plexapi.server import PlexServer
-    from pmmutils.args import PMMArgs
-    from pmmutils.exceptions import Continue, Failed
     from requests.status_codes import _codes as codes
     from retrying import retry
     from tqdm import tqdm
@@ -33,7 +32,7 @@ modes = {
     },
     "clear": {
         "ed": "Cleared", "ing": "Clearing", "space": "Space Recovered",
-        "desc": "Clears out the PIC Restore Directory. (CANNOT BE RESTORED)"
+        "desc": "Clears out the ImageMaid Restore Directory. (CANNOT BE RESTORED)"
     },
     "report": {
         "ed": "Reported", "ing": "Reporting", "space": "Potential Recovery",
@@ -41,11 +40,11 @@ modes = {
     },
     "move": {
         "ed": "Moved", "ing": "Moving", "space": "Potential Recovery",
-        "desc": "Metadata Directory Files will be moved to the PIC Restore Directory. (CAN BE RESTORED)"
+        "desc": "Metadata Directory Files will be moved to the ImageMaid Restore Directory. (CAN BE RESTORED)"
     },
     "restore": {
         "ed": "Restored", "ing": "Restoring", "space": "",
-        "desc": "Restores the Metadata Directory Files from the PIC Restore Directory."
+        "desc": "Restores the Metadata Directory Files from the ImageMaid Restore Directory."
     },
     "remove": {
         "ed": "Removed", "ing": "Removing", "space": "Space Recovered",
@@ -73,32 +72,32 @@ options = [
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with extra trace logs."},
     {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."}
 ]
-script_name = "Plex Image Cleanup"
+script_name = "Image Maid"
 plex_db_name = "com.plexapp.plugins.library.db"
 base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
-pmmargs = PMMArgs("meisnate12/Plex-Image-Cleanup", base_dir, options, use_nightly=False)
-logger = logging.PMMLogger(script_name, "plex_image_cleanup", os.path.join(config_dir, "logs"), discord_url=pmmargs["discord"], is_trace=pmmargs["trace"], log_requests=pmmargs["log-requests"])
-logger.secret([pmmargs["url"], pmmargs["discord"], pmmargs["token"], quote(str(pmmargs["url"])), requests.utils.urlparse(pmmargs["url"]).netloc])
-requests.Session.send = util.update_send(requests.Session.send, pmmargs["timeout"])
-plexapi.BASE_HEADERS["X-Plex-Client-Identifier"] = pmmargs.uuid
+args = KometaArgs("Kometa-Team/ImageMaid", base_dir, options, use_nightly=False)
+logger = KometaLogger(script_name, "imagemaid", os.path.join(config_dir, "logs"), discord_url=args["discord"], is_trace=args["trace"], log_requests=args["log-requests"])
+logger.secret([args["url"], args["discord"], args["token"], quote(str(args["url"])), requests.utils.urlparse(args["url"]).netloc])
+requests.Session.send = util.update_send(requests.Session.send, args["timeout"])
+plexapi.BASE_HEADERS["X-Plex-Client-Identifier"] = args.uuid
 
-def pic_thread(attrs):
+def imagemaid_thread(attrs):
     with ProcessPoolExecutor(max_workers=1) as executor:
-        executor.submit(run_plex_image_cleanup, *[attrs])
+        executor.submit(run_imagemaid, *[attrs])
 
-def run_plex_image_cleanup(attrs):
-    logger.header(pmmargs, sub=True, discord_update=True)
+def run_imagemaid(attrs):
+    logger.header(args, sub=True, discord_update=True)
     logger.separator("Validating Options", space=False, border=False)
-    do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else pmmargs["photo-transcoder"]
-    do_trash = attrs["empty-trash"] if "empty-trash" in attrs else pmmargs["empty-trash"]
-    do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else pmmargs["clean-bundles"]
-    do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else pmmargs["optimize-db"]
-    local_run = pmmargs["local"]
+    do_transcode = attrs["photo-transcoder"] if "photo-transcoder" in attrs else args["photo-transcoder"]
+    do_trash = attrs["empty-trash"] if "empty-trash" in attrs else args["empty-trash"]
+    do_bundles = attrs["clean-bundles"] if "clean-bundles" in attrs else args["clean-bundles"]
+    do_optimize = attrs["optimize-db"] if "optimize-db" in attrs else args["optimize-db"]
+    local_run = args["local"]
     if "mode" in attrs and attrs["mode"]:
         mode = str(attrs["mode"]).lower()
-    elif pmmargs["mode"]:
-        mode = str(pmmargs["mode"]).lower()
+    elif args["mode"]:
+        mode = str(args["mode"]).lower()
     else:
         mode = "report"
     description = f"Running in {mode.capitalize()} Mode"
@@ -127,24 +126,24 @@ def run_plex_image_cleanup(attrs):
             raise Failed(f"Mode Error: {mode} Invalid. Options: \n\t{mode_descriptions}")
         logger.info(f"{mode.capitalize()}: {modes[mode]['desc']}")
         do_metadata = mode in ["report", "move", "remove"]
-        if do_metadata and not local_run and not pmmargs["url"] and not pmmargs["token"]:
+        if do_metadata and not local_run and not args["url"] and not args["token"]:
             local_run = True
             logger.warning("No Plex URL and Plex Token Given assuming Local Run")
 
         # Check Plex Path
-        if not pmmargs["plex"]:
+        if not args["plex"]:
             if not os.path.exists(os.path.join(base_dir, "plex")):
                 raise Failed("Args Error: No Plex Path Provided")
             logger.warning(f"No Plex Path Provided. Using default: {os.path.join(base_dir, 'plex')}")
-            pmmargs["plex"] = os.path.join(base_dir, "plex")
-        pmmargs["plex"] = os.path.abspath(pmmargs["plex"])
-        transcoder_dir = os.path.join(pmmargs["plex"], "Cache", "PhotoTranscoder")
-        databases_dir = os.path.join(pmmargs["plex"], "Plug-in Support", "Databases")
-        meta_dir = os.path.join(pmmargs["plex"], "Metadata")
-        restore_dir = os.path.join(pmmargs["plex"], "PIC Restore")
+            args["plex"] = os.path.join(base_dir, "plex")
+        args["plex"] = os.path.abspath(args["plex"])
+        transcoder_dir = os.path.join(args["plex"], "Cache", "PhotoTranscoder")
+        databases_dir = os.path.join(args["plex"], "Plug-in Support", "Databases")
+        meta_dir = os.path.join(args["plex"], "Metadata")
+        restore_dir = os.path.join(args["plex"], "ImageMaid Restore")
 
-        if not os.path.exists(pmmargs["plex"]):
-            raise Failed(f"Directory Error: Plex Databases Directory Not Found: {os.path.abspath(pmmargs['plex'])}")
+        if not os.path.exists(args["plex"]):
+            raise Failed(f"Directory Error: Plex Databases Directory Not Found: {os.path.abspath(args['plex'])}")
         elif local_run and not os.path.exists(databases_dir):
             raise Failed(f"Directory Error: Plug-in Support\\Databases Directory Not Found: {databases_dir}")
         elif mode != "nothing" and not os.path.exists(meta_dir):
@@ -157,17 +156,17 @@ def run_plex_image_cleanup(attrs):
         server = None
         if do_trash or do_bundles or do_optimize or (do_metadata and not local_run):
             logger.info("Connecting To Plex")
-            if not pmmargs["url"]:
+            if not args["url"]:
                 raise Failed("Args Error: No Plex URL Provided")
-            if not pmmargs["token"]:
+            if not args["token"]:
                 raise Failed("Args Error: No Plex Token Provided")
-            plexapi.server.TIMEOUT = pmmargs["timeout"]
-            os.environ["PLEXAPI_PLEXAPI_TIMEOUT"] = str(pmmargs["timeout"])
+            plexapi.server.TIMEOUT = args["timeout"]
+            os.environ["PLEXAPI_PLEXAPI_TIMEOUT"] = str(args["timeout"])
 
             @retry(stop_max_attempt_number=5, wait_incrementing_start=60000, wait_incrementing_increment=60000, retry_on_exception=not_failed)
             def plex_connect():
                 try:
-                    return PlexServer(pmmargs["url"], pmmargs["token"], timeout=pmmargs["timeout"])
+                    return PlexServer(args["url"], args["token"], timeout=args["timeout"])
                 except Unauthorized:
                     raise Failed("Plex Error: Plex token is invalid")
                 except Exception as e1:
@@ -178,12 +177,12 @@ def run_plex_image_cleanup(attrs):
 
         try:
             if do_metadata and os.path.exists(restore_dir):
-                logger.error(f"{mode} mode invalid while the PIC Restore Directory exists.", discord=True, rows=[
-                    [("PIC Path", restore_dir)],
+                logger.error(f"{mode} mode invalid while the ImageMaid Restore Directory exists.", discord=True, rows=[
+                    [("ImageMaid Path", restore_dir)],
                     [("Mode Options",
                       "Mode: restore (Restore the bloat images back into Plex)\nMode: remove (Remove the bloat images)")]
                 ])
-                logger.error(f"PIC Path: {restore_dir}\n"
+                logger.error(f"ImageMaid Path: {restore_dir}\n"
                              f"Mode Options:\n"
                              f"    Mode: restore (Restore the bloat images back into Plex)\n"
                              f"    Mode: remove (Remove the bloat images)")
@@ -195,9 +194,9 @@ def run_plex_image_cleanup(attrs):
                         temp_db_warning = "At least one of the SQLite temp files is next to the Plex DB; this indicates Plex is still running\n" \
                                           "and copying the DB carries a small risk of data loss as the temp files may not have updated the\n" \
                                           "main DB yet.\n" \
-                                          "If you restarted Plex just before running Plex Image Cleanup, and are still getting this error, it\n" \
+                                          "If you restarted Plex just before running ImageMaid, and are still getting this error, it\n" \
                                           "can be ignored by using `--ignore` or setting `IGNORE_RUNNING=True` in the .env file."
-                        if not pmmargs["ignore"]:
+                        if not args["ignore"]:
                             raise Failed(temp_db_warning)
                         logger.info(temp_db_warning)
                         logger.info("Warning Ignored")
@@ -208,7 +207,7 @@ def run_plex_image_cleanup(attrs):
                 temp_dir = os.path.join(config_dir, "temp")
 
                 is_usable = False
-                if pmmargs["existing"]:
+                if args["existing"]:
                     if os.path.exists(dbpath):
                         is_usable, time_ago = util.in_the_last(dbpath, hours=2)
                         if is_usable:
@@ -338,7 +337,7 @@ def run_plex_image_cleanup(attrs):
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):
-                    raise Failed(f"Restore Failed: PIC Restore Directory does not exist: {restore_dir}")
+                    raise Failed(f"Restore Failed: ImageMaid Restore Directory does not exist: {restore_dir}")
                 if mode == "restore":
                     logger.separator("Restore Renamed Bloat Images")
 
@@ -361,29 +360,29 @@ def run_plex_image_cleanup(attrs):
                     report.append([("Restore Renamed Bloat Images", "")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
                 else:
-                    logger.separator("Removing PIC Restore Directory")
+                    logger.separator("Removing ImageMaid Restore Directory")
 
-                    logger.info("Scanning PIC Restore for Bloat Images to Remove", start="scanning")
-                    del_paths = [os.path.join(r, f) for r, d, fs in tqdm(os.walk(restore_dir), unit=" directories", desc="| Scanning PIC Restore for Bloat Images to Remove") for f in fs]
-                    logger.info(f"Scanning Complete: Found {len(del_paths)} Bloat Images in the PIC Directory to Remove")
+                    logger.info("Scanning ImageMaid Restore for Bloat Images to Remove", start="scanning")
+                    del_paths = [os.path.join(r, f) for r, d, fs in tqdm(os.walk(restore_dir), unit=" directories", desc="| Scanning ImageMaid Restore for Bloat Images to Remove") for f in fs]
+                    logger.info(f"Scanning Complete: Found {len(del_paths)} Bloat Images in the ImageMaid Directory to Remove")
                     logger.info(f"Runtime: {logger.runtime()}")
                     logger.info()
 
                     messages = []
-                    logger.info("Removing PIC Restore Bloat Images", start="work")
+                    logger.info("Removing ImageMaid Restore Bloat Images", start="work")
                     logger["size"] = 0
-                    for path in tqdm(del_paths, unit=" removed", desc="| Removing PIC Restore Bloat Images"):
+                    for path in tqdm(del_paths, unit=" removed", desc="| Removing ImageMaid Restore Bloat Images"):
                         messages.append(f"REMOVE: {path}")
                         logger["size"] += os.path.getsize(path)
                         os.remove(path)
                     shutil.rmtree(restore_dir)
                     for message in messages:
                         logger.trace(message)
-                    logger.info(f"Removing Complete: Removed {len(del_paths)} PIC Restore Bloat Images")
+                    logger.info(f"Removing Complete: Removed {len(del_paths)} ImageMaid Restore Bloat Images")
                     space = util.format_bytes(logger["size"])
                     logger.info(f"Space Recovered: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
-                    report.append([("Removing PIC Restore Bloat Images", "")])
+                    report.append([("Removing ImageMaid Restore Bloat Images", "")])
                     report.append([("", f"{space} of Space Recovered Removing {len(del_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
         except Failed as e:
@@ -429,7 +428,7 @@ def run_plex_image_cleanup(attrs):
                     logger.separator()
                     getattr(server.library, op)()
                     logger.info(f"{title} Plex Operation Started")
-                    for _ in tqdm(range(pmmargs["sleep"]), desc=f"Sleeping for {pmmargs['sleep']} seconds", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]"):
+                    for _ in tqdm(range(args["sleep"]), desc=f"Sleeping for {args['sleep']} seconds", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]"):
                         time.sleep(1)
                 else:
                     logger.error(f"Plex Error: {title} requires a connection to Plex")
@@ -456,10 +455,10 @@ def run_plex_image_cleanup(attrs):
 
 if __name__ == "__main__":
     try:
-        if pmmargs["schedule"]:
-            pmmargs["schedule"] = pmmargs["schedule"].lower().replace(" ", "")
+        if args["schedule"]:
+            args["schedule"] = args["schedule"].lower().replace(" ", "")
             valid_sc = []
-            schedules = pmmargs["schedule"].split(",")
+            schedules = args["schedule"].split(",")
             logger.separator(f"{script_name} Continuous Scheduled")
             logger.info()
             logger.info("Scheduled Runs: ")
@@ -495,32 +494,32 @@ if __name__ == "__main__":
                                 if final not in modes:
                                     raise Failed(f"Mode Error: {v} Invalid. Options: \n\t{mode_descriptions}")
                             else:
-                                final = args.parse_bool(v)
+                                final = parse_bool(v)
                                 if final is None:
                                     raise Failed(f'"{k.capitalize()} Error: {v} must be either "True" or "False""')
                             options[k] = final
 
                     if frequency == "daily":
                         run_str += "Daily"
-                        schedule.every().day.at(time_to_run).do(pic_thread, options)
+                        schedule.every().day.at(time_to_run).do(imagemaid_thread, options)
                     elif frequency.startswith("weekly(") and frequency.endswith(")"):
                         weekday = frequency[7:-1]
                         run_str += f"Weekly on {weekday.capitalize()}s"
                         match weekday:
                             case "sunday":
-                                schedule.every().sunday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().sunday.at(time_to_run).do(imagemaid_thread, options)
                             case "monday":
-                                schedule.every().monday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().monday.at(time_to_run).do(imagemaid_thread, options)
                             case "tuesday":
-                                schedule.every().tuesday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().tuesday.at(time_to_run).do(imagemaid_thread, options)
                             case "wednesday":
-                                schedule.every().wednesday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().wednesday.at(time_to_run).do(imagemaid_thread, options)
                             case "thursday":
-                                schedule.every().thursday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().thursday.at(time_to_run).do(imagemaid_thread, options)
                             case "friday":
-                                schedule.every().friday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().friday.at(time_to_run).do(imagemaid_thread, options)
                             case "saturday":
-                                schedule.every().saturday.at(time_to_run).do(pic_thread, options)
+                                schedule.every().saturday.at(time_to_run).do(imagemaid_thread, options)
                             case _:
                                 raise Failed(f"Schedule Error: Invalid Weekly Frequency: {frequency}\nValue must a weekday")
                     elif frequency.startswith("monthly(") and frequency.endswith(")"):
@@ -528,7 +527,7 @@ if __name__ == "__main__":
                             day = int(frequency[8:-1])
                             run_str += f"Monthly on the {num2words(day, to='ordinal_num')}"
                             if 0 < day < 32:
-                                schedule.every().month_on(day).at(time_to_run).do(pic_thread, options)
+                                schedule.every().month_on(day).at(time_to_run).do(imagemaid_thread, options)
                             else:
                                 raise ValueError
                         except ValueError:
@@ -566,6 +565,6 @@ if __name__ == "__main__":
                 logger.ghost(f"Current Time: {current_time} | {remaining_str} until the next run on {next_run_str}")
                 time.sleep(60)
         else:
-            pic_thread({})
+            imagemaid_thread({})
     except KeyboardInterrupt:
-        logger.separator("Exiting Plex Image Cleanup")
+        logger.separator("Exiting ImageMaid")

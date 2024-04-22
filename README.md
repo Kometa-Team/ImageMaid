@@ -1,17 +1,17 @@
-# Plex Image Cleanup
+# ImageMaid
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/meisnate12/Plex-Image-Cleanup?style=plastic)](https://github.com/meisnate12/Plex-Image-Cleanup/releases)
-[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/meisnate12/plex-image-cleanup?label=docker&sort=semver&style=plastic)](https://hub.docker.com/r/meisnate12/plex-image-cleanup)
-[![Docker Pulls](https://img.shields.io/docker/pulls/meisnate12/plex-image-cleanup?style=plastic)](https://hub.docker.com/r/meisnate12/plex-image-cleanup)
-[![Develop GitHub commits since latest stable release (by SemVer)](https://img.shields.io/github/commits-since/meisnate12/Plex-Image-Cleanup/latest/develop?label=Commits%20in%20Develop&style=plastic)](https://github.com/meisnate12/Plex-Image-Cleanup/tree/develop)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/Kometa-Team/ImageMaid?style=plastic)](https://github.com/Kometa-Team/ImageMaid/releases)
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/kometateam/imagemaid?label=docker&sort=semver&style=plastic)](https://hub.docker.com/r/kometateam/imagemaid)
+[![Docker Pulls](https://img.shields.io/docker/pulls/kometateam/imagemaid?style=plastic)](https://hub.docker.com/r/kometateam/imagemaid)
+[![Develop GitHub commits since latest stable release (by SemVer)](https://img.shields.io/github/commits-since/Kometa-Team/ImageMaid/latest/develop?label=Commits%20in%20Develop&style=plastic)](https://github.com/Kometa-Team/ImageMaid/tree/develop)
 
-[![Discord](https://img.shields.io/discord/822460010649878528?color=%2300bc8c&label=Discord&style=plastic)](https://metamanager.wiki/en/latest/discord/)
-[![Reddit](https://img.shields.io/reddit/subreddit-subscribers/PlexMetaManager?color=%2300bc8c&label=r%2FPlexMetaManager&style=plastic)](https://www.reddit.com/r/PlexMetaManager/)
-[![Wiki](https://img.shields.io/readthedocs/plex-meta-manager?color=%2300bc8c&style=plastic)](https://metamanager.wiki/en/latest/pmm/scripts/image-cleanup/)
+[![Discord](https://img.shields.io/discord/822460010649878528?color=%2300bc8c&label=Discord&style=plastic)](https://kometa.wiki/en/latest/discord/)
+[![Reddit](https://img.shields.io/reddit/subreddit-subscribers/Kometa?color=%2300bc8c&label=r%2FKometa&style=plastic)](https://www.reddit.com/r/Kometa/)
+[![Wiki](https://img.shields.io/readthedocs/kometa?color=%2300bc8c&style=plastic)](https://kometa.wiki/en/latest/kometa/scripts/imagemaid/)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/meisnate12?color=%238a2be2&style=plastic)](https://github.com/sponsors/meisnate12)
 [![Sponsor or Donate](https://img.shields.io/badge/-Sponsor%2FDonate-blueviolet?style=plastic)](https://github.com/sponsors/meisnate12)
 
-Your Plex directories are growing out of control. You use overlays from [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) (PMM) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script can free up gigs of space....
+Your Plex directories are growing out of control. You use overlays from [Kometa](https://github.com/Kometa-Team/Kometa) or upload lots of custom art from [Title Card Maker](https://github.com/CollinHeist/TitleCardMaker) (TCM) that you no longer want to use or need to eliminate. You don't want to perform the [plex dance](https://www.plexopedia.com/plex-media-server/general/plex-dance/) if you can avoid it. This script can free up gigs of space....
 
 As well as being able to clean the PhotoTranscoder Directory and running the Plex operations Empty Trash, Clean Bundles, and Optimize DB. 
 
@@ -21,9 +21,9 @@ Special Thanks to [bullmoose20](https://github.com/bullmoose20) for the original
 
 This image shows which photos would be removed. Red is removed, Green is kept because it is the actively selected poster. The other two come standard from Plex when the posters are retrieved so the script will not touch those either:
 
-## Installing Plex Image Cleanup
+## Installing ImageMaid
 
-Generally, Plex Image Cleanup can be installed in one of two ways:
+Generally, ImageMaid can be installed in one of two ways:
 
 1. Running on a system as a Python script [we will refer to this as a "local" install]
 2. Running as a Docker container
@@ -36,18 +36,18 @@ If you have some specific reason to avoid Docker, or you prefer running it as a 
 
 ### Install Walkthroughs
 
-There are no detailed walkthroughs specifically for Plex Image Cleanup but the process is extremely similar to how you would do it with [Plex Meta Manager](https://metamanager.wiki/en/latest/home/installation.html#install-walkthroughs).
+There are no detailed walkthroughs specifically for ImageMaid but the process is extremely similar to how you would do it with [Kometa](https://kometa.wiki/en/latest/home/installation.html#install-walkthroughs).
 
 ### Local Install Overview
 
-Plex Image Cleanup requires Python 3.11 or later. Later versions may function but are untested.
+ImageMaid requires Python 3.11 or later. Later versions may function but are untested.
 
 These are high-level steps which assume the user has knowledge of python and pip, and the general ability to troubleshoot issues. 
 
-1. Clone or [download and unzip](https://github.com/meisnate12/Plex-Image-Cleanup/archive/refs/heads/master.zip) the repo.
+1. Clone or [download and unzip](https://github.com/Kometa-Team/ImageMaid/archive/refs/heads/master.zip) the repo.
 
 ```shell
-git clone https://github.com/meisnate12/Plex-Image-Cleanup
+git clone https://github.com/Kometa-Team/ImageMaid
 ```
 2. Install dependencies:
 
@@ -61,10 +61,10 @@ pip install -r requirements.txt
 pip install -r requirements.txt --ignore-installed
 ```
 
-At this point Plex-Image-Cleanup has been installed, and you can verify installation by running:
+At this point ImageMaid has been installed, and you can verify installation by running:
 
 ```shell
-python plex_image_cleanup.py
+python imagemaid.py
 ```
 
 ### Docker Install Overview
@@ -72,7 +72,7 @@ python plex_image_cleanup.py
 #### Docker Run:
 
 ```shell
-docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw meisnate12/plex-image-cleanup
+docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw kometateam/imagemaid
 ```
 * The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to plex.
 
@@ -87,18 +87,17 @@ Example Docker Run command:
 These docs are assuming you have a basic understanding of Docker concepts.  One place to get familiar with Docker would be the [official tutorial](https://www.docker.com/101-tutorial/).
 
 ```shell
-docker run -v "X:\Media\Plex Image Cleanup\config:/config:rw" -v "X:\Plex Media Server:/plex:rw" meisnate12/plex-image-cleanup
+docker run -v "X:\Media\ImageMaid\config:/config:rw" -v "X:\Plex Media Server:/plex:rw" kometateam/imagemaid
 ```
 
 #### Docker Compose:
 
 Example Docker Compose file:
 ```yaml
-version: "2.1"
 services:
-  plex-image-cleanup:
-    image: meisnate12/plex-image-cleanup
-    container_name: plex-image-cleanup
+  imagemaid:
+    image: kometateam/imagemaid
+    container_name: imagemaid
     environment:
       - TZ=TIMEZONE #optional
     volumes:
@@ -109,13 +108,13 @@ services:
 
 #### Dockerfile
 
-A `Dockerfile` is included within the GitHub repository for those who require it, although this is only suggested for those with knowledge of dockerfiles. The official Plex Image Cleanup build is available on the [Dockerhub Website](https://hub.docker.com/r/meisnate12/plex-image-cleanup).
+A `Dockerfile` is included within the GitHub repository for those who require it, although this is only suggested for those with knowledge of dockerfiles. The official ImageMaid build is available on the [Dockerhub Website](https://hub.docker.com/r/kometateam/imagemaid).
 
 ## Usage
 
-When running Plex Image Cleanup, make sure that you are not running any tools which may touch posters, backgrounds or title card images - namely [Plex Meta Manager](https://github.com/meisnate12/Plex-Meta-Manager) or [TitleCardMaker](https://github.com/CollinHeist/TitleCardMaker).
+When running ImageMaid, make sure that you are not running any tools which may touch posters, backgrounds or title card images - namely [Kometa](https://github.com/Kometa-Team/Kometa) or [TitleCardMaker](https://github.com/CollinHeist/TitleCardMaker).
 
-It is recommended to schedule Plex Image Cleanup after the above tools or Plex's Scheduled Tasks.
+It is recommended to schedule ImageMaid after the above tools or Plex's Scheduled Tasks.
 
 An example schedule would be:
 
@@ -123,9 +122,9 @@ An example schedule would be:
 
 * 02:00-05:00 - Plex Scheduled Tasks
 
-* 05:00-07:00 - Plex Meta Manager
+* 05:00-07:00 - Kometa
 
-* 07:00-09:00 - Plex Image Cleanup
+* 07:00-09:00 - ImageMaid
 
 ### Tips
 
@@ -135,7 +134,7 @@ An example schedule would be:
 
 ## Global Options
 
-Plex Image Cleanup has multiple Global Options to change how it runs these are set in 3 different ways listed in priority order:
+ImageMaid has multiple Global Options to change how it runs these are set in 3 different ways listed in priority order:
 
 1. Setting the Environment Variable.
 
@@ -179,12 +178,12 @@ To set the `Plex Path` for the run:
 
 #### Mode
 
-How Plex Image Cleanup runs depends on the `Mode` Option that's currently set for that run.
+How ImageMaid runs depends on the `Mode` Option that's currently set for that run.
 
 * `report`: Metadata Directory File changes will be reported but not performed.
-* `move`: Metadata Directory Files will be moved to the PIC Restore Directory. (CAN BE RESTORED)
-* `restore`: Restores the Metadata Directory Files from the PIC Restore Directory.
-* `clear`: Clears out the PIC Restore Directory. (CANNOT BE RESTORED)
+* `move`: Metadata Directory Files will be moved to the ImageMaid Restore Directory. (CAN BE RESTORED)
+* `restore`: Restores the Metadata Directory Files from the ImageMaid Restore Directory.
+* `clear`: Clears out the ImageMaid Restore Directory. (CANNOT BE RESTORED)
 * `remove`: Metadata Directory Files will be removed. (CANNOT BE RESTORED)
 * `nothing`: Metadata Directory Files will not even be looked at.
 
@@ -306,9 +305,9 @@ Run with every request and file action logged.
 
 ### Continuous Schedule
 
-Plex Image Cleanup can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the `Schedule` Option.
+ImageMaid can be run either immediately or on a schedule. The default behavior is to run immediately to run using a schedule simply pass in the `Schedule` Option.
 
-Add a Schedule Block to the `Schedule` Option to run Plex Image Cleanup using a continuous schedule.
+Add a Schedule Block to the `Schedule` Option to run ImageMaid using a continuous schedule.
 
 * **Shell Command:** `-sc` or `--schedule "05:00|weekly(sunday)"`
 

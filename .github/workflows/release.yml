@@ -1,22 +1,22 @@
-name: Release
+name: Create Release
 
 on:
   release:
     types: [ published ]
 
 jobs:
-
-  release-notification:
-
+  create:
     runs-on: ubuntu-latest
     steps:
 
       - name: Send Discord Release Notification
-        uses: meisnate12/discord-notifications@master
+        uses: Kometa-Team/discord-notifications@master
         with:
           webhook_id_token: ${{ secrets.RELEASE_WEBHOOK }}
           release: true
-          title: ${{ secrets.NAME }} Release VERSION
+          title: ${{ secrets.NAME }} VERSION
           message: "${{ secrets.RELEASE_TAG }} - A new version of ${{ secrets.NAME }} has been released and is available to all users"
-          username: Metabot
-          avatar_url: https://raw.githubusercontent.com/meisnate12/Plex-Meta-Manager/master/.github/pmm.png
+          username: Kobota
+          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
+          author: ${{ secrets.NAME }} Release
+          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/release.png

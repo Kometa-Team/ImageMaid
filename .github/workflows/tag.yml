@@ -1,12 +1,13 @@
-name: Tag
+name: Tag New Version
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - '**'
+  pull_request:
 
 jobs:
-
-  tag-new-versions:
+  tag:
     runs-on: ubuntu-latest
     steps:
 
