@@ -7,4 +7,4 @@ kometautils==0.3.4
 requests==2.31.0
 retrying==1.3.4
 tmdbapis==1.2.16
-tqdm==4.66.2
+tqdm==4.66.4
