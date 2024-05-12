@@ -49,7 +49,12 @@ These are high-level steps which assume the user has knowledge of python and pip
 ```shell
 git clone https://github.com/Kometa-Team/ImageMaid
 ```
-2. Install dependencies:
+2. move into the ImageMaid directory.
+
+```shell
+cd ImageMaid
+```
+2. Install dependencies (it is recommended to do this is a virtual environment):
 
 ```shell
 pip install -r requirements.txt
