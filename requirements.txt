@@ -1,6 +1,6 @@
 num2words==0.5.13
 numpy==1.26.4
-opencv-python==4.9.0.80
+opencv-python==4.10.0.82
 pillow==10.3.0
 PlexAPI==4.15.12
 kometautils==0.3.4
