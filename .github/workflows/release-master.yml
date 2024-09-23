@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
-          ref: nightly
+          ref: develop
           fetch-depth: 0
 
       - name: Create Release Commit and Synchronize Branches
@@ -55,7 +55,7 @@ jobs:
             git add VERSION
             git commit -m "${{ vars.NAME }} Release ${NEW_VERSION}"
             git push origin develop
-            git push origin refs/heads/nightly:refs/heads/main
+            git push origin refs/heads/develop:refs/heads/main
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master
