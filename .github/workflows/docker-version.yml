@@ -1,4 +1,4 @@
-name: Docker Version Release
+name: Docker Version Build
 
 on:
   create:
@@ -7,9 +7,9 @@ on:
 
 jobs:
 
-  docker:
+  docker-build-version:
+    if: ${{ startsWith(github.ref, 'refs/tags/v1') || startsWith(github.ref, 'refs/tags/v2') }}
     runs-on: ubuntu-latest
-
     steps:
 
       - name: Check Out Repo
@@ -42,40 +42,42 @@ jobs:
         with:
           context: ./
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
-          tags: kometateam/${{ secrets.DOCKER_REPO }}:${{ steps.get_version.outputs.VERSION }}
+          tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:${{ steps.get_version.outputs.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master
         if: success()
         with:
           webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
-          title: "${{ secrets.REPO_NAME }} ${{ steps.get_version.outputs.VERSION }}: **Build Successful**"
-          url: https://github.com/Kometa-Team/${{ secrets.REPO_NAME }}/actions/runs/${{ github.run_id }}
-          color: 844716
-          username: Kobota
-          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
-          author: Docker
-          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/docker.png
+          title: "${{ vars.NAME }} ${{ steps.get_version.outputs.VERSION }}: ${{ vars.TEXT_SUCCESS }}"
+          url: https://github.com/Kometa-Team/${{ vars.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: ${{ vars.COLOR_SUCCESS }}
+          username: ${{ vars.BOT_NAME }}
+          avatar_url: ${{ vars.BOT_IMAGE }}
+          author: ${{ vars.DOCKER_NAME }}
+          author_icon_url: ${{ vars.DOCKER_IMAGE }}
 
       - name: Discord Failure Notification
         uses: Kometa-Team/discord-notifications@master
         if: failure()
         with:
           webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
-          message: <@&1079153184007790652>
-          title: "${{ secrets.REPO_NAME }} ${{ steps.get_version.outputs.VERSION }}: **Build Failed**"
-          url: https://github.com/Kometa-Team/${{ secrets.REPO_NAME }}/actions/runs/${{ github.run_id }}
-          color: 14879811
-          username: Kobota
-          avatar_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/logo.png
-          author: Docker
-          author_icon_url: https://raw.githubusercontent.com/Kometa-Team/Kometa/nightly/.github/docker.png
+          message: ${{ vars.BUILD_FAILURE_ROLE }}
+          title: "${{ vars.NAME }} ${{ steps.get_version.outputs.VERSION }}: ${{ vars.TEXT_FAILURE }}"
+          url: https://github.com/Kometa-Team/${{ vars.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: ${{ vars.COLOR_FAILURE }}
+          username: ${{ vars.BOT_NAME }}
+          avatar_url: ${{ vars.BOT_IMAGE }}
+          author: ${{ vars.DOCKER_NAME }}
+          author_icon_url: ${{ vars.DOCKER_IMAGE }}
 
       - name: Create release
         uses: marvinpinto/action-automatic-releases@latest
         with:
-          title: ${{ secrets.NAME }} ${{ github.event.ref }}
+          title: ${{ vars.NAME }} ${{ github.event.ref }}
           repo_token: ${{ secrets.PAT }}
           prerelease: false

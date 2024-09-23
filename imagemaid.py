@@ -72,7 +72,7 @@ options = [
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with extra trace logs."},
     {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."}
 ]
-script_name = "Image Maid"
+script_name = "ImageMaid"
 plex_db_name = "com.plexapp.plugins.library.db"
 base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
