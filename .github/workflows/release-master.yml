@@ -1,7 +1,6 @@
 name: Master Release
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       release_type:
