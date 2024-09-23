@@ -32,13 +32,13 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: ./
           file: ./Dockerfile
           build-args: |
             "BRANCH_NAME=develop"
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:develop
 
