@@ -1,8 +1,10 @@
 name: Docker Develop Build
 
 on:
-  push:
-    branches: [ develop ]
+  workflow_run:
+    workflows: ["Master Release"]
+    types:
+      - completed
 
 jobs:
 
