@@ -174,9 +174,10 @@ LOG_REQUESTS=False
 
 #### Plex Path
 
-The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
+The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support` folders.
 
 To set the `Plex Path` for the run: 
+
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
 * **Shell Command:** `-p "C:\Plex Media Server"` or `--plex "C:\Plex Media Server"`
 * Will also check `/plex` relative to the base directory of the script if neither of the above are specified.
@@ -193,6 +194,7 @@ How ImageMaid runs depends on the `Mode` Option that's currently set for that ru
 * `nothing`: Metadata Directory Files will not even be looked at.
 
 To set the Global `Mode` for the run: 
+
 * **Environment Variable:** `MODE=remove`
 * **Shell Command:** `-m remove` or `--mode remove`
 
@@ -205,11 +207,11 @@ The script needs to query the server's plex database to make sure it doesn't rem
 By default, the script will expect to connect to your Plex Server to download the Database using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 
 * **Environment Variables:** 
-  * `PLEX_URL=http://192.168.1.12:32400`
-  * `PLEX_TOKEN=123456789`
+    * `PLEX_URL=http://192.168.1.12:32400`
+    * `PLEX_TOKEN=123456789`
 * **Shell Commands:** 
-  * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
-  * `-t "123456789"` or `--token "123456789"`
+    * `-u "http://192.168.1.12:32400"` or `--url "http://192.168.1.12:32400"`
+    * `-t "123456789"` or `--token "123456789"`
 
 #### Copy From Local
 
@@ -284,7 +286,7 @@ Connection Timeout in seconds that's greater than 0.
 
 #### Sleep
 
-Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that's greater than 0 .
+Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB in seconds that's greater than 0.
 
 * **Default:** `60`
 
