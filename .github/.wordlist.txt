@@ -8,7 +8,7 @@ ImageMaid
 Kometa
 PBF
 PhotoTranscoder
-Plex
+plex
 repo
 TCM
 TitleCardMaker
