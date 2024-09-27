@@ -55,7 +55,7 @@ jobs:
             git add VERSION
             git commit -m "${{ vars.NAME }} Release ${NEW_VERSION}"
             git push origin develop
-            git push origin refs/heads/develop:refs/heads/main
+            git push origin refs/heads/develop:refs/heads/master
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master
