@@ -316,21 +316,24 @@ def run_imagemaid(attrs):
                     messages = []
                     bloat_paths_filtered = []
                     for path in tqdm(bloat_paths, unit=f" {modes[mode]['ed'].lower()}", desc=f"| {modes[mode]['ing']} Bloat Images"):
+                        imageIsBloat = False
                         with Image.open(path) as image:
                             exif_tags = image.getexif()
                             if 0x04bc in exif_tags and exif_tags[0x04bc] == "overlay":
-                                logger["size"] += os.path.getsize(path)
-                                bloat_paths_filtered.append(path)
-                                if mode == "move":
-                                    messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
-                                    util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
-                                elif mode == "remove":
-                                    messages.append(f"REMOVE: {path}")
-                                    os.remove(path)
-                                else:
-                                    messages.append(f"BLOAT FILE: {path}")
+                                imageIsBloat = True
+                        if imageIsBloat:
+                            logger["size"] += os.path.getsize(path)
+                            bloat_paths_filtered.append(path)
+                            if mode == "move":
+                                messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
+                                util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
+                            elif mode == "remove":
+                                messages.append(f"REMOVE: {path}")
+                                os.remove(path)
                             else:
-                                messages.append(f"FILE: {path} does not have EXIF overlay tag and won't be considered.")
+                                messages.append(f"BLOAT FILE: {path}")
+                        else:
+                            messages.append(f"FILE: {path} does not have EXIF overlay tag and won't be considered.")
                     for message in messages:
                         if mode == "report":
                             logger.debug(message)
