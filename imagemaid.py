@@ -3,6 +3,7 @@ from concurrent.futures import ProcessPoolExecutor
 from contextlib import closing
 from datetime import datetime
 from urllib.parse import quote
+from PIL import Image
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 11:
     print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
@@ -313,27 +314,37 @@ def run_imagemaid(attrs):
                     logger.info(f"{modes[mode]['ing']} Bloat Images", start="work")
                     logger["size"] = 0
                     messages = []
+                    bloat_paths_filtered = []
                     for path in tqdm(bloat_paths, unit=f" {modes[mode]['ed'].lower()}", desc=f"| {modes[mode]['ing']} Bloat Images"):
-                        logger["size"] += os.path.getsize(path)
-                        if mode == "move":
-                            messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
-                            util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
-                        elif mode == "remove":
-                            messages.append(f"REMOVE: {path}")
-                            os.remove(path)
+                        imageIsBloat = False
+                        with Image.open(path) as image:
+                            exif_tags = image.getexif()
+                            if 0x04bc in exif_tags and exif_tags[0x04bc] == "overlay":
+                                imageIsBloat = True
+                        if imageIsBloat:
+                            logger["size"] += os.path.getsize(path)
+                            bloat_paths_filtered.append(path)
+                            if mode == "move":
+                                messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
+                                util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
+                            elif mode == "remove":
+                                messages.append(f"REMOVE: {path}")
+                                os.remove(path)
+                            else:
+                                messages.append(f"BLOAT FILE: {path}")
                         else:
-                            messages.append(f"BLOAT FILE: {path}")
+                            messages.append(f"FILE: {path} does not have EXIF overlay tag and won't be considered.")
                     for message in messages:
                         if mode == "report":
                             logger.debug(message)
                         else:
                             logger.trace(message)
-                    logger.info(f"{modes[mode]['ing']} Complete: {modes[mode]['ed']} {len(bloat_paths)} Bloat Images")
+                    logger.info(f"{modes[mode]['ing']} Complete: {modes[mode]['ed']} {len(bloat_paths_filtered)} Bloat Images ({len(bloat_paths)})")
                     space = util.format_bytes(logger["size"])
                     logger.info(f"{modes[mode]['space']}: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
                     report.append([(f"{modes[mode]['ing']} Bloat Images", "")])
-                    report.append([("", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths)} Files")])
+                    report.append([("", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths_filtered)} Files  ({len(bloat_paths)})")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):
