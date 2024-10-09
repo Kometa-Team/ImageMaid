@@ -330,7 +330,7 @@ def run_imagemaid(attrs):
                                 else:
                                     messages.append(f"BLOAT FILE: {path}")
                             else:
-                                messages.append(f"IMAGE FILE: {path} does not have EXIF overlay tag and won't be considered.")
+                                messages.append(f"FILE: {path} does not have EXIF overlay tag and won't be considered.")
                     for message in messages:
                         if mode == "report":
                             logger.debug(message)
