@@ -81,11 +81,13 @@ docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw kometateam/
 ```
 * The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to plex.
 
-    * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
- 
-    * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
+* Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
 
-    * If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
+* Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
+
+* If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
+
+If you need help finding this directory, refer to [this article at Plex](https://support.plex.tv/articles/202915258-where-is-the-plex-media-server-data-directory-located/)
 
 Example Docker Run command:
 
