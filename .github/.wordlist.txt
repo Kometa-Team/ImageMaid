@@ -6,6 +6,7 @@ Dockerhub
 env
 ImageMaid
 Kometa
+pathing
 PBF
 PhotoTranscoder
 plex
