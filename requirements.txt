@@ -1,4 +1,4 @@
-num2words==0.5.13
+num2words==0.5.14
 numpy==2.1.1
 opencv-python==4.10.0.84
 pillow==10.4.0
