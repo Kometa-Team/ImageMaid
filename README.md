@@ -158,8 +158,10 @@ MODE=report
 SCHEDULE=
 PLEX_URL=http://192.168.1.12:32400
 PLEX_TOKEN=123456789
+OVERLAYS_ONLY=False
 DISCORD=https://discord.com/api/webhooks/###################/####################################################################
 TIMEOUT=600
+NO_VERIFY_SSL=False
 SLEEP=60
 IGNORE_RUNNING=False
 LOCAL_DB=False
@@ -268,6 +270,14 @@ In addition to cleaning the Plex Metadata Directory for custom images the script
 
 ### Other Options
 
+#### Overlays Only
+
+Will only remove Kometa Overlay Images and other images will be ignored.
+
+* **Environment Variable:** `OVERLAYS_ONLY=True`
+
+* **Shell Command:** `-oo` or `--overlays-only`
+
 #### Discord URL
 
 Discord Webhook URL to send notifications to.
@@ -285,6 +295,14 @@ Connection Timeout in seconds that's greater than 0.
 * **Environment Variable:** `TIMEOUT=1000`
 
 * **Shell Command:** `-ti 1000` or `--timeout 1000`
+
+#### No Verify SSL
+
+Turn SSL Verification off.
+
+* **Environment Variable:** `NO_VERIFY_SSL=True`
+
+* **Shell Command:** `-nv` or `--no-verify-ssl`
 
 #### Sleep
 
