@@ -83,7 +83,7 @@ docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw kometateam/
 
     * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
  
-    * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).
+    * Change `<PATH_TO_PLEX>` to the directory where your Plex Directory is (It contains directories: Cache, Metadata, Plug-in Support).  Information on this directory's location can be found [here](https://support.plex.tv/articles/202915258-where-is-the-plex-media-server-data-directory-located/)
 
     * If your directory has spaces (such as "My Documents"), place quotation marks around your directory pathing as shown here: `-v "<PATH_TO_CONFIG>:/config:rw"`
 
