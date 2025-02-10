@@ -186,22 +186,9 @@ jobs:
           title: ${{ vars.NAME }} ${{ needs.increment-build.outputs.version }} Build ${{ needs.increment-build.outputs.build-value }}
           url: https://github.com/Kometa-Team/${{ vars.REPO_NAME }}/commit/${{ needs.increment-build.outputs.commit-hash }}
           description: ${{ needs.increment-build.outputs.commit-msg }}
-          message: "<@&1079103365604184074> - An update to ${{ vars.NAME }} has been published and is available to users of the **develop** branch."
+          message: "${{ vars.DEVELOP_ROLE }} - An update to ${{ vars.NAME }} has been published and is available to users of the **develop** branch."
           color: ${{ vars.COLOR_SUCCESS }}
           username: ${{ vars.BOT_NAME }}
           avatar_url: ${{ vars.BOT_IMAGE }}
           author: ${{ vars.NAME }} Develop Release
           author_icon_url: ${{ vars.RELEASE_IMAGE }}
-
-  cleanup-tags:
-    runs-on: ubuntu-latest
-    needs: [ increment-build, verify-changes, docker-build-develop, commit-notification ]
-    if: ${{ success() }}
-    steps:
-      - name: remove tag
-        run: |
-            HUB_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d "{\"username\": \"${{ secrets.DOCKER_HUB_USERNAME }}\", \"password\": \"${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}\"}" https://hub.docker.com/v2/users/login/ | jq -r .token)
-            curl -i -X DELETE \
-            -H "Accept: application/json" \
-            -H "Authorization: JWT $HUB_TOKEN" \
-            https://hub.docker.com/v2/repositories/${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}/tags/${{ needs.increment-build.outputs.pr-tag }}/

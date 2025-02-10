@@ -70,7 +70,8 @@ options = [
     {"arg": "cb", "key": "clean-bundles",    "env": "CLEAN_BUNDLES",    "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Clean Bundles Operation."},
     {"arg": "od", "key": "optimize-db",      "env": "OPTIMIZE_DB",      "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Optimize DB Operation."},
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with extra trace logs."},
-    {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."}
+    {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."},
+    {"arg": "nv", "key": "no-verify-ssl",    "env": "NO_VERIFY_SSL",    "type": "bool", "default": False,    "help": "Turns off Global SSL Verification."}
 ]
 script_name = "ImageMaid"
 plex_db_name = "com.plexapp.plugins.library.db"
@@ -166,7 +167,13 @@ def run_imagemaid(attrs):
             @retry(stop_max_attempt_number=5, wait_incrementing_start=60000, wait_incrementing_increment=60000, retry_on_exception=not_failed)
             def plex_connect():
                 try:
-                    return PlexServer(args["url"], args["token"], timeout=args["timeout"])
+                    session = requests.session()
+                    if args["no-verify-ssl"]:
+                        session.verify = False
+                        if session.verify is False:
+                            import urllib3
+                            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    return PlexServer(args["url"], args["token"], timeout=args["timeout"], session=session)
                 except Unauthorized:
                     raise Failed("Plex Error: Plex token is invalid")
                 except Exception as e1:
