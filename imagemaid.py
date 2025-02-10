@@ -74,7 +74,6 @@ options = [
     {"arg": "od", "key": "optimize-db",      "env": "OPTIMIZE_DB",      "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Optimize DB Operation."},
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with extra trace logs."},
     {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."},
-    {"arg": "nv", "key": "no-verify-ssl",    "env": "NO_VERIFY_SSL",    "type": "bool", "default": False,    "help": "Turns off Global SSL Verification."}
 ]
 script_name = "ImageMaid"
 plex_db_name = "com.plexapp.plugins.library.db"
