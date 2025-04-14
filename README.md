@@ -54,7 +54,7 @@ git clone https://github.com/Kometa-Team/ImageMaid
 ```shell
 cd ImageMaid
 ```
-2. Install dependencies (it is recommended to do this is a virtual environment):
+2. Install dependencies (it is recommended to do this in a virtual environment):
 
 ```shell
 pip install -r requirements.txt
@@ -79,7 +79,7 @@ python imagemaid.py
 ```shell
 docker run -v <PATH_TO_CONFIG>:/config:rw -v <PATH_TO_PLEX>:/plex:rw kometateam/imagemaid
 ```
-* The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to plex.
+* The `-v <PATH_TO_CONFIG>:/config:rw` and `-v <PATH_TO_PLEX>:/plex:rw` flags mount the location you choose as a persistent volumes to store your files and give access to Plex.
 
     * Change `<PATH_TO_CONFIG>` to a directory where your .env and other files are.
  
@@ -113,7 +113,7 @@ services:
 
 #### Dockerfile
 
-A `Dockerfile` is included within the GitHub repository for those who require it, although this is only suggested for those with knowledge of dockerfiles. The official ImageMaid build is available on the [Dockerhub Website](https://hub.docker.com/r/kometateam/imagemaid).
+A `Dockerfile` is included within the GitHub repository for those who require it, although this is only suggested for those with knowledge of Dockerfiles. The official ImageMaid build is available on the [Dockerhub Website](https://hub.docker.com/r/kometateam/imagemaid).
 
 ## Usage
 
@@ -139,7 +139,7 @@ An example schedule would be:
 
 ## Global Options
 
-ImageMaid has multiple Global Options to change how it runs these are set in 3 different ways listed in priority order:
+ImageMaid has multiple Global Options to change how it runs, these are set in 3 different ways listed in priority order:
 
 1. Setting the Environment Variable.
 
@@ -174,7 +174,7 @@ LOG_REQUESTS=False
 
 #### Plex Path
 
-The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the servers Metadata including `Cache`, `Metadata`, and `Plug-in Support`.
+The only required Option is the `Plex Path` Option which is the Plex Config Directory containing the server's metadata including `Cache`, `Metadata`, and `Plug-in Support`.
 
 To set the `Plex Path` for the run: 
 * **Environment Variable:** `PLEX_PATH=C:\Plex Media Server`
@@ -198,11 +198,11 @@ To set the Global `Mode` for the run:
 
 ### Database
 
-The script needs to query the server's plex database to make sure it doesn't remove actively selected images. 
+The script needs to query the server's Plex database to make sure it doesn't remove actively selected images. 
 
 #### Download From Plex API
 
-By default, the script will expect to connect to your Plex Server to download the Database using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
+By default, the script will expect to connect to your Plex Server to download the database using your `Plex URL` and `Plex Token` Options ([Finding a Token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 
 * **Environment Variables:** 
   * `PLEX_URL=http://192.168.1.12:32400`
@@ -218,7 +218,7 @@ Alternatively the database can be copied from your local config directory you su
 * **Environment Variable:** `LOCAL_DB=True`
 * **Shell Command:** `-l` or `--local`
 
-**IMPORTANT! When Copying the Local Database, it is recommended to restart Plex before running this script and to make sure Plex is idle.**
+**IMPORTANT! When copying the Local Database, it is recommended to restart Plex before running this script and to make sure Plex is idle.**
 
 Restarting allows for all temp SQLite files to be written to the primary Plex DB ensuring that all currently selected posters are properly known and preserved.
 
