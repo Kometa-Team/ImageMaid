@@ -284,7 +284,7 @@ def run_imagemaid(attrs):
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                     if not os.path.exists(dbpath):
-                        raise Failed(f"File Error: Database File Could not {'Copied' if local_run else 'Downloaded'}")
+                        raise Failed(f"File Error: Database File Could not be {'Copied' if local_run else 'Downloaded'}")
                     logger.info(f"Plex Database {'Copy' if local_run else 'Download'} Complete")
                     logger.info(f"Database {'Copied' if local_run else 'Downloaded'} to: {dbpath}")
                     logger.info(f"Runtime: {logger.runtime()}")
@@ -297,7 +297,7 @@ def run_imagemaid(attrs):
                     logger.info("Database Opened Querying For In-Use Images", start="query")
                     connection.row_factory = sqlite3.Row
                     with closing(connection.cursor()) as cursor:
-                        for field in ["user_thumb_url", "user_art_url", "user_banner_url"]:
+                        for field in ["user_thumb_url", "user_art_url", "user_banner_url", "user_clear_logo_url", "user_square_art_url"]:
                             cursor.execute(f"SELECT {field} AS url FROM metadata_items WHERE {field} like 'upload://%' OR {field} like 'metadata://%'")
                             urls.extend([requests.utils.urlparse(r["url"]).path.split("/")[-1] for r in cursor.fetchall() if r and r["url"]])
                     logger.info(f"{len(urls)} In-Use Images Found")
