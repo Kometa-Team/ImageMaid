@@ -13,6 +13,7 @@ try:
     from num2words import num2words
     from kometautils import schedule, util, KometaLogger, KometaArgs, Continue, Failed
     from kometautils.args import parse_bool
+    from PIL import Image
     from plexapi.exceptions import Unauthorized
     from plexapi.server import PlexServer
     from requests.status_codes import _codes as codes
@@ -59,8 +60,10 @@ options = [
     {"arg": "sc", "key": "schedule",         "env": "SCHEDULE",         "type": "str",  "default": None,     "help": "Schedule to run in continuous mode."},
     {"arg": "u",  "key": "url",              "env": "PLEX_URL",         "type": "str",  "default": None,     "help": "Plex URL of the Server you want to connect to."},
     {"arg": "t",  "key": "token",            "env": "PLEX_TOKEN",       "type": "str",  "default": None,     "help": "Plex Token of the Server you want to connect to."},
+    {"arg": "oo", "key": "overlays-only",    "env": "OVERLAYS_ONLY",    "type": "bool", "default": False,    "help": "Will only remove Kometa Overlay Images and other images will be ignored."},
     {"arg": "di", "key": "discord",          "env": "DISCORD",          "type": "str",  "default": None,     "help": "Webhook URL to channel for Notifications."},
     {"arg": "ti", "key": "timeout",          "env": "TIMEOUT",          "type": "int",  "default": 600,      "help": "Connection Timeout in Seconds that's greater than 0. (Default: 600)"},
+    {"arg": "nv", "key": "no-verify-ssl",    "env": "NO_VERIFY_SSL",    "type": "bool", "default": False,    "help": "Turns off Global SSL Verification."},
     {"arg": "s",  "key": "sleep",            "env": "SLEEP",            "type": "int",  "default": 60,       "help": "Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB. (Default: 60)"},
     {"arg": "i",  "key": "ignore",           "env": "IGNORE_RUNNING",   "type": "bool", "default": False,    "help": "Ignore Warnings that Plex is currently Running."},
     {"arg": "l",  "key": "local",            "env": "LOCAL_DB",         "type": "bool", "default": False,    "help": "The script will copy the database file rather than downloading it through the Plex API (Helps with Large DBs)."},
@@ -70,7 +73,7 @@ options = [
     {"arg": "cb", "key": "clean-bundles",    "env": "CLEAN_BUNDLES",    "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Clean Bundles Operation."},
     {"arg": "od", "key": "optimize-db",      "env": "OPTIMIZE_DB",      "type": "bool", "default": False,    "help": "Global Toggle to Run Plex's Optimize DB Operation."},
     {"arg": "tr", "key": "trace",            "env": "TRACE",            "type": "bool", "default": False,    "help": "Run with extra trace logs."},
-    {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."}
+    {"arg": "lr", "key": "log-requests",     "env": "LOG_REQUESTS",     "type": "bool", "default": False,    "help": "Run with every request logged."},
 ]
 script_name = "ImageMaid"
 plex_db_name = "com.plexapp.plugins.library.db"
@@ -166,7 +169,13 @@ def run_imagemaid(attrs):
             @retry(stop_max_attempt_number=5, wait_incrementing_start=60000, wait_incrementing_increment=60000, retry_on_exception=not_failed)
             def plex_connect():
                 try:
-                    return PlexServer(args["url"], args["token"], timeout=args["timeout"])
+                    session = requests.session()
+                    if args["no-verify-ssl"]:
+                        session.verify = False
+                        if session.verify is False:
+                            import urllib3
+                            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+                    return PlexServer(args["url"], args["token"], timeout=args["timeout"], session=session)
                 except Unauthorized:
                     raise Failed("Plex Error: Plex token is invalid")
                 except Exception as e1:
@@ -275,7 +284,7 @@ def run_imagemaid(attrs):
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                     if not os.path.exists(dbpath):
-                        raise Failed(f"File Error: Database File Could not {'Copied' if local_run else 'Downloaded'}")
+                        raise Failed(f"File Error: Database File Could not be {'Copied' if local_run else 'Downloaded'}")
                     logger.info(f"Plex Database {'Copy' if local_run else 'Download'} Complete")
                     logger.info(f"Database {'Copied' if local_run else 'Downloaded'} to: {dbpath}")
                     logger.info(f"Runtime: {logger.runtime()}")
@@ -288,7 +297,7 @@ def run_imagemaid(attrs):
                     logger.info("Database Opened Querying For In-Use Images", start="query")
                     connection.row_factory = sqlite3.Row
                     with closing(connection.cursor()) as cursor:
-                        for field in ["user_thumb_url", "user_art_url", "user_banner_url"]:
+                        for field in ["user_thumb_url", "user_art_url", "user_banner_url", "user_clear_logo_url", "user_square_art_url"]:
                             cursor.execute(f"SELECT {field} AS url FROM metadata_items WHERE {field} like 'upload://%' OR {field} like 'metadata://%'")
                             urls.extend([requests.utils.urlparse(r["url"]).path.split("/")[-1] for r in cursor.fetchall() if r and r["url"]])
                     logger.info(f"{len(urls)} In-Use Images Found")
@@ -313,27 +322,38 @@ def run_imagemaid(attrs):
                     logger.info(f"{modes[mode]['ing']} Bloat Images", start="work")
                     logger["size"] = 0
                     messages = []
+                    bloat_paths_filtered = []
                     for path in tqdm(bloat_paths, unit=f" {modes[mode]['ed'].lower()}", desc=f"| {modes[mode]['ing']} Bloat Images"):
-                        logger["size"] += os.path.getsize(path)
-                        if mode == "move":
-                            messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
-                            util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
-                        elif mode == "remove":
-                            messages.append(f"REMOVE: {path}")
-                            os.remove(path)
+                        overlay_bloat = False
+                        if args["overlays-only"]:
+                            with Image.open(path) as image:
+                                exif_tags = image.getexif()
+                                if 0x04bc in exif_tags and exif_tags[0x04bc] == "overlay":
+                                    overlay_bloat = True
+                        if args["overlays-only"] and overlay_bloat is False:
+                            messages.append(f"IGNORED FILE NO EXIF TAG: {path}")
                         else:
-                            messages.append(f"BLOAT FILE: {path}")
+                            logger["size"] += os.path.getsize(path)
+                            bloat_paths_filtered.append(path)
+                            if mode == "move":
+                                messages.append(f"MOVE: {path} --> {os.path.join(restore_dir, path.removeprefix(meta_dir)[1:])}.jpg")
+                                util.move_path(path, meta_dir, restore_dir, suffix=".jpg")
+                            elif mode == "remove":
+                                messages.append(f"REMOVE: {path}")
+                                os.remove(path)
+                            else:
+                                messages.append(f"BLOAT FILE: {path}")
                     for message in messages:
                         if mode == "report":
                             logger.debug(message)
                         else:
                             logger.trace(message)
-                    logger.info(f"{modes[mode]['ing']} Complete: {modes[mode]['ed']} {len(bloat_paths)} Bloat Images")
+                    logger.info(f"{modes[mode]['ing']} Complete: {modes[mode]['ed']} {len(bloat_paths_filtered)} Bloat Images")
                     space = util.format_bytes(logger["size"])
                     logger.info(f"{modes[mode]['space']}: {space}")
                     logger.info(f"Runtime: {logger.runtime()}")
                     report.append([(f"{modes[mode]['ing']} Bloat Images", "")])
-                    report.append([("", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths)} Files")])
+                    report.append([("", f"{space} of {modes[mode]['space']} {modes[mode]['ing']} {len(bloat_paths_filtered)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), (f"{mode.capitalize()} Time", f"{logger.runtime('work')}")])
             elif mode in ["restore", "clear"]:
                 if not os.path.exists(restore_dir):

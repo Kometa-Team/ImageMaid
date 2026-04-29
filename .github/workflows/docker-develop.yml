@@ -32,7 +32,7 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and Push
         id: docker_build
         uses: docker/build-push-action@v6
         with:
@@ -40,7 +40,7 @@ jobs:
           file: ./Dockerfile
           build-args: |
             "BRANCH_NAME=develop"
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:develop
           cache-from: type=gha
@@ -83,7 +83,7 @@ jobs:
         uses: Kometa-Team/discord-notifications@master
         with:
           webhook_id_token: ${{ secrets.DEVELOP_WEBHOOK }}
-          title: Commits
+          title: ${{ vars.TEXT_COMMITS }}
           message: "${{ vars.DEVELOP_ROLE }} - An update to ${{ vars.NAME }} has been published and is available to users of the **develop** branch."
           commits: "true"
           color: ${{ vars.COLOR_SUCCESS }}

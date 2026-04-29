@@ -1,9 +1,7 @@
-num2words==0.5.13
-numpy==2.1.1
-opencv-python==4.10.0.84
-pillow==10.4.0
-PlexAPI==4.15.16
+num2words==0.5.14
+pillow==11.2.1
+PlexAPI==4.16.1
 kometautils==0.3.4
 requests==2.33.0
-retrying==1.3.4
-tqdm==4.66.5
+retrying==1.4.2
+tqdm==4.67.1

@@ -18,6 +18,7 @@ jobs:
           release: true
           title: Release VERSION
           message: "${{ vars.MASTER_ROLE }} - A new version of ${{ vars.NAME }} has been released and is available to all users"
+          color: ${{ vars.COLOR_SUCCESS }}
           username: ${{ vars.BOT_NAME }}
           avatar_url: ${{ vars.BOT_IMAGE }}
           author: ${{ vars.NAME }} Release
