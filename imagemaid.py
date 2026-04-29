@@ -284,7 +284,7 @@ def run_imagemaid(attrs):
                     if os.path.exists(temp_dir):
                         shutil.rmtree(temp_dir)
                     if not os.path.exists(dbpath):
-                        raise Failed(f"File Error: Database File Could not {'Copied' if local_run else 'Downloaded'}")
+                        raise Failed(f"File Error: Database File Could not be {'Copied' if local_run else 'Downloaded'}")
                     logger.info(f"Plex Database {'Copy' if local_run else 'Download'} Complete")
                     logger.info(f"Database {'Copied' if local_run else 'Downloaded'} to: {dbpath}")
                     logger.info(f"Runtime: {logger.runtime()}")
