@@ -1,5 +1,5 @@
 num2words==0.5.14
-pillow==11.2.1
+pillow==12.2.0
 PlexAPI==4.16.1
 kometautils==0.3.4
 requests==2.33.0
