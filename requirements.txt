@@ -1,7 +1,7 @@
 num2words==0.5.14
 pillow==11.2.1
-PlexAPI==4.16.1
+PlexAPI==4.18.2
 kometautils==0.3.4
-requests==2.33.0
+requests==2.34.2
 retrying==1.4.2
-tqdm==4.67.1
+tqdm==4.69.0
