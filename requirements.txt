@@ -4,4 +4,4 @@ PlexAPI==4.18.2
 kometautils==0.3.4
 requests==2.34.2
 retrying==1.4.2
-tqdm==4.69.1
+tqdm==4.70.0
