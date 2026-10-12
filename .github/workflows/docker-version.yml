@@ -46,7 +46,7 @@ jobs:
           push: true
           tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:${{ steps.get_version.outputs.VERSION }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master
