@@ -1,7 +1,7 @@
 import glob, os, re, shutil, sqlite3, sys, time, zipfile
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import closing
 from datetime import datetime
+from cleanup import in_use_artwork, remove_transcoder_file, transcoder_files, walk_metadata
 from gotify import GotifyNotifier
 from urllib.parse import quote
 
@@ -311,15 +311,13 @@ def run_imagemaid(attrs):
                     fields.append(("Copied" if local_run else "Downloaded", f"{logger.runtime('database')}"))
 
                 # Query DB
-                urls = []
                 with sqlite3.connect(dbpath) as connection:
                     logger.info()
                     logger.info("Database Opened Querying For In-Use Images", start="query")
-                    connection.row_factory = sqlite3.Row
-                    with closing(connection.cursor()) as cursor:
-                        for field in ["user_thumb_url", "user_art_url", "user_banner_url", "user_clear_logo_url", "user_square_art_url"]:
-                            cursor.execute(f"SELECT {field} AS url FROM metadata_items WHERE {field} like 'upload://%' OR {field} like 'metadata://%'")
-                            urls.extend([requests.utils.urlparse(r["url"]).path.split("/")[-1] for r in cursor.fetchall() if r and r["url"]])
+                    try:
+                        urls = in_use_artwork(connection)
+                    except ValueError as error:
+                        raise Failed(str(error)) from error
                     logger.info(f"{len(urls)} In-Use Images Found")
                     logger.info(f"Runtime: {logger.runtime()}")
                     fields.append(("Query", f"{logger.runtime('query')}"))
@@ -330,7 +328,7 @@ def run_imagemaid(attrs):
                 logger.separator(f"{modes[mode]['ing']} Bloat Images")
                 logger.info(f"Scanning Metadata Directory For Bloat Images: {meta_dir}", start="scanning")
                 bloat_paths = [
-                    os.path.join(r, f) for r, d, fs in tqdm(os.walk(meta_dir), unit=" directories", desc="| Scanning Metadata for Bloat Images") for f in fs
+                    os.path.join(r, f) for r, d, fs in tqdm(walk_metadata(meta_dir), unit=" directories", desc="| Scanning Metadata for Bloat Images") for f in fs
                     if 'Contents' not in r and "." not in f and f not in urls
                 ]
                 logger.info(f"{len(bloat_paths)} Bloat Images Found")
@@ -434,7 +432,7 @@ def run_imagemaid(attrs):
             logger.separator(f"Remove PhotoTranscoder Images\nDir: {transcoder_dir}")
 
             head = logger.info("Scanning for PhotoTranscoder Images", start="transcode_scan")
-            transcode_images = [f for f in tqdm(glob.iglob(os.path.join(transcoder_dir, "**", "*.*"), recursive=True), unit=" images", desc=f"| {head}")]
+            transcode_images = list(tqdm(transcoder_files(transcoder_dir), unit=" images", desc=f"| {head}"))
             logger.info(f"Scanning Complete: Found {len(transcode_images)} PhotoTranscoder Images to Remove")
             logger.info(f"Runtime: {logger.runtime()}")
             logger.info()
@@ -442,20 +440,24 @@ def run_imagemaid(attrs):
             head = logger.info("Removing PhotoTranscoder Images", start="transcode")
             logger["size"] = 0
             messages = []
-            for f in tqdm(transcode_images, unit=" removed", desc=f"| {head}"):
-                file = os.path.join(transcoder_dir, f)
+            removed_count = 0
+            for file in tqdm(transcode_images, unit=" removed", desc=f"| {head}"):
+                recovered_size = remove_transcoder_file(file)
+                if recovered_size is None:
+                    logger.trace(f"SKIPPED MISSING CACHE FILE: {file}")
+                    continue
                 messages.append(f"REMOVE: {file}")
-                logger["size"] += os.path.getsize(file)
-                os.remove(file)
+                logger["size"] += recovered_size
+                removed_count += 1
             for message in messages:
                 logger.trace(message)
 
-            logger.info(f"Remove Complete: Removed {len(transcode_images)} PhotoTranscoder Images")
+            logger.info(f"Remove Complete: Removed {removed_count} PhotoTranscoder Images")
             space = util.format_bytes(logger["size"])
             logger.info(f"Space Recovered: {space}")
             logger.info(f"Runtime: {logger.runtime()}")
             report.append([("Remove PhotoTranscoder Images", "")])
-            report.append([("", f"{space} of Space Recovered Removing {len(transcode_images)} Files")])
+            report.append([("", f"{space} of Space Recovered Removing {removed_count} Files")])
             report.append([("Scan Time", f"{logger.runtime('transcode_scan')}"), ("Remove Time", f"{logger.runtime('transcode')}")])
 
         # Plex Operations
