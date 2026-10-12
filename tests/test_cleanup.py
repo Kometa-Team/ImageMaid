@@ -2,8 +2,62 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from cleanup import ARTWORK_COLUMNS, in_use_artwork, walk_metadata
+from cleanup import ARTWORK_COLUMNS, in_use_artwork, remove_transcoder_file, transcoder_files, walk_metadata
+
+
+class TranscoderTests(unittest.TestCase):
+    def test_cleanup_preserves_synology_metadata_and_directories(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cache = Path(temporary)
+            image = cache / "00" / "image.jpg"
+            synology = cache / "00" / "@eaDir" / "image.jpg" / "thumbnail.jpg"
+            dotted_directory = cache / "00" / "directory.jpg"
+            for path in (image, synology):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"fixture")
+            dotted_directory.mkdir()
+            candidates = list(transcoder_files(cache))
+            self.assertEqual(candidates, [str(image)])
+            self.assertEqual(remove_transcoder_file(candidates[0]), 7)
+            self.assertFalse(image.exists())
+            self.assertTrue(synology.is_file())
+            self.assertTrue(dotted_directory.is_dir())
+
+    def test_missing_cache_file_is_skipped(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            self.assertIsNone(remove_transcoder_file(Path(temporary) / "missing.jpg"))
+
+    def test_linked_cache_entries_are_excluded(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            cache = Path(temporary)
+            linked_file = cache / "linked.jpg"
+            linked_directory = cache / "linked-directory"
+            nested_file = linked_directory / "nested.jpg"
+            linked_directory.mkdir()
+            for path in (linked_file, nested_file):
+                path.write_bytes(b"fixture")
+            with patch("cleanup.os.path.islink", side_effect=lambda path: Path(path) in {linked_file, linked_directory}):
+                self.assertEqual(list(transcoder_files(cache)), [])
+            self.assertTrue(linked_file.is_file())
+            self.assertTrue(nested_file.is_file())
+
+    def test_cache_file_disappearing_after_stat_is_skipped(self):
+        with patch("cleanup.os.path.getsize", return_value=100), patch("cleanup.os.remove", side_effect=FileNotFoundError):
+            self.assertIsNone(remove_transcoder_file("vanished.jpg"))
+
+    def test_empty_file_is_counted_as_a_successful_removal(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            image = Path(temporary) / "empty.jpg"
+            image.touch()
+            self.assertEqual(remove_transcoder_file(image), 0)
+            self.assertFalse(image.exists())
+
+    def test_permission_errors_are_not_hidden(self):
+        with patch("cleanup.os.path.getsize", return_value=100), patch("cleanup.os.remove", side_effect=PermissionError):
+            with self.assertRaises(PermissionError):
+                remove_transcoder_file("denied.jpg")
 
 
 class DatabaseTests(unittest.TestCase):

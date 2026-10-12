@@ -35,3 +35,26 @@ def walk_metadata(metadata_dir):
             and not (os.path.basename(root) == "Uploads" and directory == "themes")
         ]
         yield root, directories, files
+
+
+def transcoder_files(transcoder_dir):
+    """Yield regular cache files, excluding Synology metadata and symlinks."""
+    for root, directories, files in os.walk(transcoder_dir):
+        directories[:] = [
+            directory for directory in directories
+            if directory != "@eaDir" and not os.path.islink(os.path.join(root, directory))
+        ]
+        for filename in files:
+            path = os.path.join(root, filename)
+            if "." in filename and not os.path.islink(path) and os.path.isfile(path):
+                yield path
+
+
+def remove_transcoder_file(path):
+    """Return recovered bytes, or None if Plex already removed this cache file."""
+    try:
+        size = os.path.getsize(path)
+        os.remove(path)
+    except FileNotFoundError:
+        return None
+    return size
