@@ -286,6 +286,36 @@ Discord Webhook URL to send notifications to.
 
 * **Shell Command:** `-d "https://discord.com/api/webhooks/###/###"` or `--discord "https://discord.com/api/webhooks/###/###"`
 
+#### Gotify Notifications
+
+ImageMaid supports optional notifications through [Gotify](https://gotify.net/). Gotify notifications work independently of Discord and are disabled by default.
+
+To enable Gotify, create an application on your Gotify server and add the following settings to your `config/.env` file:
+
+```dotenv
+GOTIFY_ENABLED=True
+GOTIFY_URL=https://gotify.example.com
+GOTIFY_TOKEN=YOUR_APPLICATION_TOKEN
+GOTIFY_PRIORITY=5
+GOTIFY_NOTIFY_START=True
+GOTIFY_NOTIFY_END=True
+GOTIFY_NOTIFY_ERROR=True
+```
+
+| Environment Variable | Default | Description |
+| --- | --- | --- |
+| `GOTIFY_ENABLED` | `False` | Enable Gotify notifications. |
+| `GOTIFY_URL` | None | Gotify server URL. |
+| `GOTIFY_TOKEN` | None | Gotify application token. |
+| `GOTIFY_PRIORITY` | `5` | Notification priority. |
+| `GOTIFY_NOTIFY_START` | `True` | Send a notification when a run starts. |
+| `GOTIFY_NOTIFY_END` | `True` | Send a notification when a run completes. |
+| `GOTIFY_NOTIFY_ERROR` | `True` | Send a notification when a run encounters an error. |
+
+Notifications use Markdown formatting. Failed Gotify requests do not interrupt ImageMaid execution.
+
+Gotify notifications are supported for both immediate and scheduled runs. Keep your Gotify application token private.
+
 #### Timeout
 
 Connection Timeout in seconds that's greater than 0.

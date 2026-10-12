@@ -2,6 +2,7 @@ import glob, os, re, shutil, sqlite3, sys, time, zipfile
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import closing
 from datetime import datetime
+from gotify import GotifyNotifier
 from urllib.parse import quote
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 11:
@@ -62,6 +63,13 @@ options = [
     {"arg": "t",  "key": "token",            "env": "PLEX_TOKEN",       "type": "str",  "default": None,     "help": "Plex Token of the Server you want to connect to."},
     {"arg": "oo", "key": "overlays-only",    "env": "OVERLAYS_ONLY",    "type": "bool", "default": False,    "help": "Will only remove Kometa Overlay Images and other images will be ignored."},
     {"arg": "di", "key": "discord",          "env": "DISCORD",          "type": "str",  "default": None,     "help": "Webhook URL to channel for Notifications."},
+    {"arg": "ge", "key": "gotify-enabled",      "env": "GOTIFY_ENABLED",      "type": "bool", "default": False, "help": "Enable Gotify notifications."},
+    {"arg": "gu", "key": "gotify-url",          "env": "GOTIFY_URL",          "type": "str",  "default": None,  "help": "Gotify server URL."},
+    {"arg": "gt", "key": "gotify-token",        "env": "GOTIFY_TOKEN",        "type": "str",  "default": None,  "help": "Gotify application token."},
+    {"arg": "gp", "key": "gotify-priority",     "env": "GOTIFY_PRIORITY",     "type": "int",  "default": 5,     "help": "Gotify message priority."},
+    {"arg": "gs", "key": "gotify-notify-start", "env": "GOTIFY_NOTIFY_START", "type": "bool", "default": True,  "help": "Notify when a run starts."},
+    {"arg": "gn", "key": "gotify-notify-end",   "env": "GOTIFY_NOTIFY_END",   "type": "bool", "default": True,  "help": "Notify when a run completes."},
+    {"arg": "gf", "key": "gotify-notify-error", "env": "GOTIFY_NOTIFY_ERROR", "type": "bool", "default": True,  "help": "Notify when a run fails."},
     {"arg": "ti", "key": "timeout",          "env": "TIMEOUT",          "type": "int",  "default": 600,      "help": "Connection Timeout in Seconds that's greater than 0. (Default: 600)"},
     {"arg": "nv", "key": "no-verify-ssl",    "env": "NO_VERIFY_SSL",    "type": "bool", "default": False,    "help": "Turns off Global SSL Verification."},
     {"arg": "s",  "key": "sleep",            "env": "SLEEP",            "type": "int",  "default": 60,       "help": "Sleep Timer between Empty Trash, Clean Bundles, and Optimize DB. (Default: 60)"},
@@ -81,7 +89,16 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 config_dir = os.path.join(base_dir, "config")
 args = KometaArgs("Kometa-Team/ImageMaid", base_dir, options, use_nightly=False)
 logger = KometaLogger(script_name, "imagemaid", os.path.join(config_dir, "logs"), discord_url=args["discord"], is_trace=args["trace"], log_requests=args["log-requests"])
-logger.secret([args["url"], args["discord"], args["token"], quote(str(args["url"])), requests.utils.urlparse(args["url"]).netloc])
+gotify = GotifyNotifier({
+    "GOTIFY_ENABLED": args["gotify-enabled"],
+    "GOTIFY_URL": args["gotify-url"] or "",
+    "GOTIFY_TOKEN": args["gotify-token"] or "",
+    "GOTIFY_PRIORITY": args["gotify-priority"],
+    "GOTIFY_NOTIFY_START": args["gotify-notify-start"],
+    "GOTIFY_NOTIFY_END": args["gotify-notify-end"],
+    "GOTIFY_NOTIFY_ERROR": args["gotify-notify-error"],
+})
+logger.secret([args["url"], args["discord"], args["token"], args["gotify-token"], quote(str(args["url"])), requests.utils.urlparse(args["url"]).netloc])
 requests.Session.send = util.update_send(requests.Session.send, args["timeout"])
 plexapi.BASE_HEADERS["X-Plex-Client-Identifier"] = args.uuid
 
@@ -116,6 +133,8 @@ def run_imagemaid(attrs):
     if extras:
         description += f" with {', '.join(extras[:-1])}{', and ' if len(extras) > 1 else ''}{extras[-1]} set to True"
     logger.info(description)
+    gotify.send("ImageMaid - Run Started", description, event="start")
+    run_error = None
 
     try:
         logger.info("Script Started", log=False, discord=True, start="script")
@@ -152,7 +171,8 @@ def run_imagemaid(attrs):
         elif mode != "nothing" and not os.path.exists(meta_dir):
             raise Failed(f"Directory Error: Metadata Directory Not Found: {meta_dir}")
         elif do_transcode and not os.path.exists(transcoder_dir):
-            logger.error(f"Directory Error: PhotoTranscoder Directory Not Found and will not be cleaned: {transcoder_dir}")
+            run_error = f"Directory Error: PhotoTranscoder Directory Not Found and will not be cleaned: {transcoder_dir}"
+            logger.error(run_error)
             do_transcode = False
 
         # Connection to Plex
@@ -406,7 +426,8 @@ def run_imagemaid(attrs):
                     report.append([("", f"{space} of Space Recovered Removing {len(del_paths)} Files")])
                     report.append([("Scan Time", f"{logger.runtime('scanning')}"), ("Restore Time", f"{logger.runtime('work')}")])
         except Failed as e:
-            logger.error(f"Metadata Error: {e}")
+            run_error = f"Metadata Error: {e}"
+            logger.error(run_error)
 
         # Delete PhotoTranscoder
         if do_transcode:
@@ -451,12 +472,15 @@ def run_imagemaid(attrs):
                     for _ in tqdm(range(args["sleep"]), desc=f"Sleeping for {args['sleep']} seconds", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]"):
                         time.sleep(1)
                 else:
-                    logger.error(f"Plex Error: {title} requires a connection to Plex")
+                    run_error = f"Plex Error: {title} requires a connection to Plex"
+                    logger.error(run_error)
     except Failed as e:
+        run_error = str(e)
         logger.separator()
         logger.critical(e, discord=True)
         logger.separator()
     except Exception as e:
+        run_error = str(e)
         for message in messages:
             logger.debug(message)
         logger.stacktrace()
@@ -471,6 +495,7 @@ def run_imagemaid(attrs):
     report.append([(f"{script_name} Finished", "")])
     report.append([("Total Runtime", f"{logger.runtime('script')}")])
     logger.report(f"{script_name} Summary", description=description, rows=report, width=18, discord=True)
+    gotify.send_run_summary(description, report, run_error)
     logger.remove_main_handler()
 
 if __name__ == "__main__":
