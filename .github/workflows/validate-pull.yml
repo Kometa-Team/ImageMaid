@@ -77,7 +77,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      actions: write
     outputs:
       commit-msg: ${{ steps.update-version.outputs.commit-msg }}
       part_value: ${{ steps.update-version.outputs.part_value }}
@@ -165,8 +164,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:${{ steps.update-version.outputs.tag-name }}
+          # No cache-to: pull_request_target gets a read-only cache token (GitHub changelog 2026-06-26)
           cache-from: type=gha
-          cache-to: type=gha,mode=min
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master

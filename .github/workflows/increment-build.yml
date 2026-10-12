@@ -113,7 +113,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      actions: write
     steps:
 
       - name: Check Out Repo
@@ -147,8 +146,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:develop
+          # No cache-to: pull_request_target gets a read-only cache token (GitHub changelog 2026-06-26)
           cache-from: type=gha
-          cache-to: type=gha,mode=min
 
       - name: Discord Success Notification
         uses: Kometa-Team/discord-notifications@master
