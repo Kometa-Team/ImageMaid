@@ -1,8 +1,7 @@
 import glob, os, re, shutil, sqlite3, sys, time, zipfile
 from concurrent.futures import ProcessPoolExecutor
-from contextlib import closing
 from datetime import datetime
-from cleanup import walk_metadata
+from cleanup import in_use_artwork, walk_metadata
 from gotify import GotifyNotifier
 from urllib.parse import quote
 
@@ -312,15 +311,13 @@ def run_imagemaid(attrs):
                     fields.append(("Copied" if local_run else "Downloaded", f"{logger.runtime('database')}"))
 
                 # Query DB
-                urls = []
                 with sqlite3.connect(dbpath) as connection:
                     logger.info()
                     logger.info("Database Opened Querying For In-Use Images", start="query")
-                    connection.row_factory = sqlite3.Row
-                    with closing(connection.cursor()) as cursor:
-                        for field in ["user_thumb_url", "user_art_url", "user_banner_url", "user_clear_logo_url", "user_square_art_url"]:
-                            cursor.execute(f"SELECT {field} AS url FROM metadata_items WHERE {field} like 'upload://%' OR {field} like 'metadata://%'")
-                            urls.extend([requests.utils.urlparse(r["url"]).path.split("/")[-1] for r in cursor.fetchall() if r and r["url"]])
+                    try:
+                        urls = in_use_artwork(connection)
+                    except ValueError as error:
+                        raise Failed(str(error)) from error
                     logger.info(f"{len(urls)} In-Use Images Found")
                     logger.info(f"Runtime: {logger.runtime()}")
                     fields.append(("Query", f"{logger.runtime('query')}"))
