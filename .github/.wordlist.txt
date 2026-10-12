@@ -18,3 +18,4 @@ titlecardmaker
 transcoder
 walkthroughs
 webhook
+Gotify
