@@ -20,21 +20,10 @@ jobs:
           fetch-depth: 0
           ref: develop
 
-      - name: Get changes
-        id: get-changes
-        run: echo "files=$(git diff --name-only HEAD^ | xargs)" >> $GITHUB_OUTPUT
-
       - name: List changed files
         id: list-changes
-        run: |
-            for file in ${{ steps.get-changes.outputs.files }}; do
-                if [[ $file =~ ^(imagemaid.py|requirements.txt|.dockerignore|Dockerfile).*$ ]] ; then
-                    echo "$file will trigger docker build"
-                    echo "build=true" >> $GITHUB_OUTPUT
-                else
-                    echo "$file will not trigger docker build"
-                fi
-            done
+        shell: bash
+        run: git diff --name-only HEAD^ | bash .github/scripts/classify-changes.sh >> "$GITHUB_OUTPUT"
 
   increment-build:
     runs-on: ubuntu-latest
@@ -65,9 +54,12 @@ jobs:
 
       - name: Update VERSION File
         id: update-version
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
-            branch_name=${{ github.event.pull_request.head.ref }}
-            repo_name=${{ github.event.pull_request.head.repo.full_name }}
+            branch_name="${HEAD_REF}"
+            repo_name="${HEAD_REPO}"
             base_name="${repo_name%/*}"
             if [[ "${branch_name}" =~ ^(master|develop)$ ]]; then 
                 pr_tag="${base_name}"
