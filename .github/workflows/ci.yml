@@ -1,0 +1,185 @@
+# PR CI orchestrator -- single entry point for all PR checks against develop, replaces validate-pull.yml.
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: ${{ github.event.action == 'synchronize' || github.event.action == 'opened' }}
+
+jobs:
+
+  guard:
+    runs-on: ubuntu-latest
+    # Irrelevant label events (anything but docker) skip the whole DAG instead of re-running everything.
+    if: >-
+      (github.event.action != 'labeled' && github.event.action != 'unlabeled') ||
+      github.event.label.name == 'docker'
+    steps:
+      - name: Check Base Branch
+        if: github.base_ref == 'master'
+        run: |
+          echo "ERROR: Pull Requests cannot be submitted to master. Please submit the Pull Request to the develop branch"
+          exit 1
+
+  validate:
+    runs-on: ubuntu-latest
+    needs: [guard]
+    # Read-only: this job diffs filenames and spellchecks markdown. No secrets needed, so fork PRs are safe here.
+    permissions:
+      contents: read
+    outputs:
+      build: ${{ steps.list-changes.outputs.build }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: List changed files
+        id: list-changes
+        # HEAD^1 is the base tip on the merge commit, so this is always the full PR-vs-base diff.
+        shell: bash
+        run: git diff --name-only HEAD^1 HEAD | bash .github/scripts/classify-changes.sh >> "$GITHUB_OUTPUT"
+
+      - name: Get all changed files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        id: changed_files
+        with:
+          files: |
+            **.md
+            CHANGELOG
+
+      - name: Run Spellcheck on changed files
+        id: spellcheck
+        uses: rojopolis/spellcheck-github-actions@dad57fc333130f4c9ae9632a6ad7ddc4de3515a2 # 0.69.0
+        with:
+          task_name: Markdown
+          source_files: ${{ steps.changed_files.outputs.all_changed_files }}
+
+  tests:
+    runs-on: ubuntu-latest
+    needs: [guard]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          # Keep in step with the python: base image in the Dockerfile.
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: pip install --requirement requirements.txt
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [validate, tests]
+    # Same-repo PRs only, because forks get no secrets; fork PRs reach this job via promote-fork-pr.yml, which re-opens them as same-repo PRs.
+    if: >-
+      needs.validate.outputs.build == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'docker')
+    permissions:
+      contents: read
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Compute build variables
+        id: build-vars
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          branch_name="${GITHUB_HEAD_REF}"
+          branch_name=$(echo "${branch_name}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          base_name="${HEAD_REPO%/*}"
+          if [[ "${branch_name}" =~ ^(master|develop)$ ]]; then
+              tag_name="${base_name}"
+          else
+              tag_name="${branch_name}"
+          fi
+          echo "tag-name=${tag_name}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build and Push
+        env:
+          IMAGE: ${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}:${{ steps.build-vars.outputs.tag-name }}
+          BRANCH_NAME: ${{ steps.build-vars.outputs.tag-name }}
+        # No layer cache: the image is small, and cache writes are what broke these builds before.
+        run: |
+          docker buildx build --file ./Dockerfile \
+            --platform linux/amd64,linux/arm64 \
+            --build-arg "BRANCH_NAME=${BRANCH_NAME}" \
+            --tag "${IMAGE}" --push .
+
+      - name: Discord Success Notification
+        uses: Kometa-Team/discord-notifications@a85936f9279e70814cf315a0eaacc0063e98a087 # master
+        if: success()
+        with:
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
+          title: "${{ vars.REPO_NAME }} ${{ steps.build-vars.outputs.tag-name }}: ${{ vars.TEXT_SUCCESS }}"
+          url: https://github.com/Kometa-Team/${{ vars.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: ${{ vars.COLOR_SUCCESS }}
+          username: ${{ vars.BOT_NAME }}
+          avatar_url: ${{ vars.BOT_IMAGE }}
+          author: ${{ vars.DOCKER_NAME }}
+          author_icon_url: ${{ vars.DOCKER_IMAGE }}
+
+      - name: Discord Failure Notification
+        uses: Kometa-Team/discord-notifications@a85936f9279e70814cf315a0eaacc0063e98a087 # master
+        if: failure()
+        with:
+          webhook_id_token: ${{ secrets.BUILD_WEBHOOK }}
+          message: ${{ vars.BUILD_FAILURE_ROLE }}
+          title: "${{ vars.REPO_NAME }} ${{ steps.build-vars.outputs.tag-name }}: ${{ vars.TEXT_FAILURE }}"
+          url: https://github.com/Kometa-Team/${{ vars.REPO_NAME }}/actions/runs/${{ github.run_id }}
+          color: ${{ vars.COLOR_FAILURE }}
+          username: ${{ vars.BOT_NAME }}
+          avatar_url: ${{ vars.BOT_IMAGE }}
+          author: ${{ vars.DOCKER_NAME }}
+          author_icon_url: ${{ vars.DOCKER_IMAGE }}
+
+  # Single stable context for branch protection -- guard-skips count as pass, not pending.
+  ci-status:
+    runs-on: ubuntu-latest
+    needs: [guard, validate, tests]
+    if: always()
+    steps:
+      - name: Check required jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          failed=$(echo "$NEEDS" | jq '[.[] | select(.result != "success" and .result != "skipped")] | length')
+          if [ "$failed" -gt 0 ]; then
+            echo "One or more required jobs did not succeed."
+            exit 1
+          fi
