@@ -17,3 +17,4 @@ Dockerfile
 venv
 .idea
 test.py
+# promotion test
