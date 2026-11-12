@@ -4,30 +4,57 @@ on:
   pull_request_target:
     types: [closed, unlabeled]
 
+# This workflow never calls the GitHub API with GITHUB_TOKEN, so it gets no permissions.
+permissions: {}
+
 jobs:
 
   tag-cleanup:
     runs-on: ubuntu-latest
-    if: github.event.action == 'closed' || contains(github.event.pull_request.labels.*.name, 'docker') == false
+    # Only same-repo PRs produce tags (fork PRs are promoted to automation/fork-pr-N), so a fork PR can never name a tag to delete.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' || contains(github.event.pull_request.labels.*.name, 'docker') == false)
     steps:
 
       - name: Get Tag Name
         id: get-tag-name
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        # Keep this tag naming identical to the Compute build variables step in ci.yml.
         run: |
-          branch_name=${{ github.event.pull_request.head.ref }}
-          repo_name=${{ github.event.pull_request.head.repo.full_name }}
-          base_name="${repo_name%/*}"
-          if [[ "${branch_name}" =~ ^(master|develop|nightly)$ ]]; then 
+          branch_name="${GITHUB_HEAD_REF}"
+          branch_name=$(echo "${branch_name}" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          base_name="${HEAD_REPO%/*}"
+          if [[ "${branch_name}" =~ ^(master|develop)$ ]]; then
               tag_name="${base_name}"
           else
               tag_name="${branch_name}"
           fi
-          echo "tag-name=${tag_name}" >> $GITHUB_OUTPUT
+          echo "tag-name=${tag_name}" >> "$GITHUB_OUTPUT"
 
       - name: remove tag
+        env:
+          HUB_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          HUB_PASS: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          DOCKER_TEAM: ${{ vars.DOCKER_TEAM }}
+          DOCKER_REPO: ${{ vars.DOCKER_REPO }}
+          TAG_NAME: ${{ steps.get-tag-name.outputs.tag-name }}
         run: |
-          HUB_TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d "{\"username\": \"${{ secrets.DOCKER_HUB_USERNAME }}\", \"password\": \"${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}\"}" https://hub.docker.com/v2/users/login/ | jq -r .token)
+          # Release and branch tags are never per-PR build tags, so a PR branch with one of these names must not delete them.
+          if [[ "${TAG_NAME}" =~ ^(latest|develop|master|v?[0-9].*)$ ]]; then
+              echo "Refusing to delete protected tag ${TAG_NAME}"
+              exit 0
+          fi
+
+          HUB_TOKEN=$(jq -n --arg u "${HUB_USER}" --arg p "${HUB_PASS}" '{username: $u, password: $p}' \
+            | curl -s -H "Content-Type: application/json" -X POST -d @- https://hub.docker.com/v2/users/login/ | jq -r .token)
+          if [[ -z "${HUB_TOKEN}" || "${HUB_TOKEN}" == "null" ]]; then
+              echo "::error::Docker Hub login failed"
+              exit 1
+          fi
+
           curl -i -X DELETE \
-          -H "Accept: application/json" \
-          -H "Authorization: JWT $HUB_TOKEN" \
-          https://hub.docker.com/v2/repositories/${{ vars.DOCKER_TEAM }}/${{ vars.DOCKER_REPO }}/tags/${{ steps.get-tag-name.outputs.tag_name }}/
+            -H "Accept: application/json" \
+            -H "Authorization: JWT ${HUB_TOKEN}" \
+            "https://hub.docker.com/v2/repositories/${DOCKER_TEAM}/${DOCKER_REPO}/tags/${TAG_NAME}/"
